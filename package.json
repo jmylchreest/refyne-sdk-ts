@@ -1,0 +1,74 @@
+{
+  "name": "@refyne/sdk",
+  "version": "0.0.0",
+  "description": "Official TypeScript SDK for the Refyne API - LLM-powered web extraction",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc --noEmit",
+    "generate": "tsx scripts/generate-types.ts",
+    "docs": "typedoc --out docs src/index.ts",
+    "clean": "rm -rf dist docs coverage",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "refyne",
+    "web-scraping",
+    "extraction",
+    "llm",
+    "api",
+    "sdk",
+    "typescript"
+  ],
+  "author": "Refyne <support@refyne.uk>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jmylchreest/refyne-sdk-ts.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jmylchreest/refyne-sdk-ts/issues"
+  },
+  "homepage": "https://docs.refyne.uk/docs/sdks/typescript",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.56.0",
+    "openapi-typescript": "^7.0.0",
+    "tsup": "^8.0.0",
+    "tsx": "^4.7.0",
+    "typedoc": "^0.25.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.2.0"
+  },
+  "peerDependencies": {
+    "undici": ">=6.0.0"
+  },
+  "peerDependenciesMeta": {
+    "undici": {
+      "optional": true
+    }
+  }
+}
