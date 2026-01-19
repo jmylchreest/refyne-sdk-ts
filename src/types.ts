@@ -230,22 +230,24 @@ export interface Job {
   status: JobStatus;
   /** Seed URL */
   url: string;
+  /** Number of URLs queued */
+  urls_queued: number;
   /** Number of pages processed */
-  pageCount: number;
+  page_count: number;
   /** Input tokens used */
-  tokenUsageInput: number;
+  token_usage_input: number;
   /** Output tokens used */
-  tokenUsageOutput: number;
-  /** Cost in credits */
-  costCredits: number;
+  token_usage_output: number;
+  /** Cost in USD */
+  cost_usd: number;
   /** Error message if failed */
-  errorMessage?: string;
+  error_message?: string;
   /** When the job started */
-  startedAt?: string;
+  started_at?: string;
   /** When the job completed */
-  completedAt?: string;
+  completed_at?: string;
   /** When the job was created */
-  createdAt: string;
+  created_at: string;
 }
 
 /**
@@ -378,18 +380,12 @@ export interface ApiKeyList {
  * Usage statistics.
  */
 export interface UsageResponse {
-  /** User's tier */
-  tier: string;
-  /** Credits used this period */
-  creditsUsed: number;
-  /** Credit limit */
-  creditsLimit: number;
-  /** Credits remaining */
-  creditsRemaining: number;
-  /** Period start date */
-  periodStart: string;
-  /** Period end date */
-  periodEnd: string;
+  /** Total number of jobs */
+  total_jobs: number;
+  /** Total USD charged for usage */
+  total_charged_usd: number;
+  /** Jobs using user's own API keys (not charged) */
+  byok_jobs: number;
 }
 
 /**
