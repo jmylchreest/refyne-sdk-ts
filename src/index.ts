@@ -10,12 +10,10 @@
  * ```typescript
  * import { Refyne } from '@refyne/sdk';
  *
- * const refyne = new Refyne.Builder()
- *   .apiKey(process.env.REFYNE_API_KEY!)
- *   .build();
+ * const client = new Refyne({ apiKey: process.env.REFYNE_API_KEY! });
  *
  * // Extract data from a single page
- * const result = await refyne.extract({
+ * const result = await client.extract({
  *   url: 'https://example.com/product',
  *   schema: {
  *     name: 'string',
@@ -27,19 +25,33 @@
  * ```
  */
 
-// Main client
-export { Refyne, RefyneBuilder } from './client';
+// Main client and sub-clients
+export { Refyne, RefyneBuilder, JobsClient, SchemasClient, SitesClient, KeysClient, LLMClient } from './client';
 export type { RefyneConfig } from './client';
+export { DEFAULT_BASE_URL, DEFAULT_TIMEOUT, DEFAULT_MAX_RETRIES } from './client';
+
+// Re-exported types from client (which re-exports from generated types)
+export type {
+  ExtractRequest,
+  ExtractResponse,
+  CrawlRequest,
+  CrawlJobResponse,
+  AnalyzeRequest,
+  AnalyzeResponse,
+  JobResponse,
+  SchemaOutput,
+  SavedSiteOutput,
+  UsageResponse,
+} from './client';
 
 // Interfaces for dependency injection
 export type {
   Logger,
-  HttpClient,
   Cache,
   CacheEntry,
   CacheControlDirectives,
 } from './interfaces';
-export { defaultLogger, defaultHttpClient } from './interfaces';
+export { defaultLogger } from './interfaces';
 
 // Cache implementation
 export { MemoryCache, parseCacheControl, createCacheEntry } from './cache';
@@ -66,51 +78,8 @@ export {
   detectRuntime,
 } from './version';
 
-// API types
-export type {
-  // Requests
-  ExtractRequest,
-  CrawlRequest,
-  CrawlOptions,
-  LlmConfig,
-  AnalyzeRequest,
-  CreateSchemaRequest,
-  CreateSiteRequest,
-  CreateApiKeyRequest,
-  UpsertLlmKeyRequest,
-  SetLlmChainRequest,
-  // Responses
-  ExtractResponse,
-  TokenUsage,
-  ExtractionMetadata,
-  CrawlJobCreated,
-  JobStatus,
-  Job,
-  JobList,
-  JobResults,
-  AnalyzeResponse,
-  Schema,
-  SchemaList,
-  Site,
-  SiteList,
-  ApiKey,
-  ApiKeyList,
-  ApiKeyCreated,
-  UsageResponse,
-  LlmKey,
-  LlmKeyList,
-  LlmChain,
-  LlmChainEntry,
-  Model,
-  ModelList,
-  HealthResponse,
-  ErrorResponse,
-  // Streaming
-  JobEventType,
-  JobEvent,
-  JobStatusEvent,
-  JobProgressEvent,
-  JobResultEvent,
-  JobErrorEvent,
-  JobCompleteEvent,
-} from './types';
+// Re-export the generated types for advanced usage
+export type { paths, components, operations } from './types';
+
+// Default export
+export { default } from './client';

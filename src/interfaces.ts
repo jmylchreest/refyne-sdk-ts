@@ -39,34 +39,6 @@ export interface Logger {
   error(msg: string, meta?: Record<string, unknown>): void;
 }
 
-/**
- * HTTP client interface for making requests.
- *
- * The SDK uses the standard Fetch API by default. Implement this interface
- * to use a custom HTTP client or for mocking in tests.
- *
- * @example
- * ```typescript
- * // Mock for testing
- * const mockClient: HttpClient = {
- *   fetch: async (url, init) => {
- *     return new Response(JSON.stringify({ data: 'mock' }), {
- *       status: 200,
- *       headers: { 'Content-Type': 'application/json' },
- *     });
- *   },
- * };
- * ```
- */
-export interface HttpClient {
-  /**
-   * Make an HTTP request.
-   * @param url - The URL to fetch
-   * @param init - Request options (method, headers, body, etc.)
-   * @returns A Promise resolving to the Response
-   */
-  fetch(url: string, init?: RequestInit): Promise<Response>;
-}
 
 /**
  * Cache entry with value and metadata.
@@ -161,10 +133,3 @@ export const defaultLogger: Logger = {
   error: (msg, meta) => console.error(`[Refyne SDK] ${msg}`, meta || ''),
 };
 
-/**
- * Default fetch-based HTTP client.
- * @internal
- */
-export const defaultHttpClient: HttpClient = {
-  fetch: (url, init) => fetch(url, init),
-};

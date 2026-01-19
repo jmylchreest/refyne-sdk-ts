@@ -4,49 +4,25 @@
  * @packageDocumentation
  */
 
-import type {
-  Logger,
-  HttpClient,
-  Cache,
-} from './interfaces';
-import { defaultLogger, defaultHttpClient } from './interfaces';
-import { MemoryCache, createCacheEntry, generateCacheKey, hashString } from './cache';
-import {
-  RefyneError,
-  createErrorFromResponse,
-} from './errors';
-import {
-  buildUserAgent,
-  checkAPIVersionCompatibility,
-} from './version';
-import type {
-  ExtractRequest,
-  ExtractResponse,
-  CrawlRequest,
-  CrawlJobCreated,
-  Job,
-  JobList,
-  JobResults,
-  AnalyzeRequest,
-  AnalyzeResponse,
-  Schema,
-  SchemaList,
-  CreateSchemaRequest,
-  Site,
-  SiteList,
-  CreateSiteRequest,
-  ApiKeyList,
-  ApiKeyCreated,
-  CreateApiKeyRequest,
-  UsageResponse,
-  LlmKey,
-  LlmKeyList,
-  UpsertLlmKeyRequest,
-  LlmChain,
-  SetLlmChainRequest,
-  ModelList,
-  JobEvent,
-} from './types';
+import createClient, { type Middleware } from 'openapi-fetch';
+import type { paths, components } from './types';
+import type { Logger, Cache } from './interfaces';
+import { defaultLogger } from './interfaces';
+import { MemoryCache } from './cache';
+import { createErrorFromResponse } from './errors';
+import { buildUserAgent, checkAPIVersionCompatibility, SDK_VERSION, MIN_API_VERSION, MAX_KNOWN_API_VERSION } from './version';
+
+// Re-export useful component types for consumers
+export type ExtractRequest = components['schemas']['ExtractInputBody'];
+export type ExtractResponse = components['schemas']['ExtractOutputBody'];
+export type CrawlRequest = components['schemas']['CreateCrawlJobInputBody'];
+export type CrawlJobResponse = components['schemas']['CrawlJobResponseBody'];
+export type AnalyzeRequest = components['schemas']['AnalyzeInputBody'];
+export type AnalyzeResponse = components['schemas']['AnalyzeResponseBody'];
+export type JobResponse = components['schemas']['JobResponse'];
+export type SchemaOutput = components['schemas']['SchemaOutput'];
+export type SavedSiteOutput = components['schemas']['SavedSiteOutput'];
+export type UsageResponse = components['schemas']['GetUsageOutputBody'];
 
 /**
  * Configuration options for the Refyne client.
@@ -62,27 +38,26 @@ export interface RefyneConfig {
   maxRetries?: number;
   /** Custom logger implementation */
   logger?: Logger;
-  /** Custom HTTP client implementation */
-  httpClient?: HttpClient;
   /** Custom cache implementation */
   cache?: Cache;
   /** Whether caching is enabled (default: true) */
   cacheEnabled?: boolean;
   /** Custom User-Agent suffix (e.g., "MyApp/1.0") */
   userAgentSuffix?: string;
-  /** Dangerously disable TLS certificate verification (default: false) */
-  dangerouslyDisableTLSVerification?: boolean;
 }
+
+export const DEFAULT_BASE_URL = 'https://api.refyne.uk';
+export const DEFAULT_TIMEOUT = 30000;
+export const DEFAULT_MAX_RETRIES = 3;
 
 /**
  * Fluent builder for creating Refyne client instances.
  *
  * @example
  * ```typescript
- * const client = new Refyne.Builder()
+ * const client = new RefyneBuilder()
  *   .apiKey(process.env.REFYNE_API_KEY!)
  *   .baseUrl('https://api.refyne.uk')
- *   .logger(myLogger)
  *   .timeout(60000)
  *   .build();
  * ```
@@ -108,7 +83,7 @@ export class RefyneBuilder {
     return this;
   }
 
-  /** Set maximum retry attempts */
+  /** Set the maximum retry attempts */
   maxRetries(count: number): this {
     this.config.maxRetries = count;
     return this;
@@ -117,12 +92,6 @@ export class RefyneBuilder {
   /** Set a custom logger */
   logger(logger: Logger): this {
     this.config.logger = logger;
-    return this;
-  }
-
-  /** Set a custom HTTP client */
-  httpClient(client: HttpClient): this {
-    this.config.httpClient = client;
     return this;
   }
 
@@ -144,550 +113,433 @@ export class RefyneBuilder {
     return this;
   }
 
-  /**
-   * Disable TLS certificate verification.
-   *
-   * **WARNING**: This is dangerous and should only be used for development
-   * with self-signed certificates. Never use in production.
-   */
-  dangerouslyDisableTLSVerification(disable: boolean): this {
-    this.config.dangerouslyDisableTLSVerification = disable;
-    return this;
-  }
-
-  /** Build the Refyne client instance */
+  /** Build the client instance */
   build(): Refyne {
     if (!this.config.apiKey) {
-      throw new Error('API key is required. Call .apiKey() before .build()');
+      throw new Error('API key is required');
     }
     return new Refyne(this.config as RefyneConfig);
   }
 }
 
+// =============================================================================
+// Sub-clients for organized API access
+// =============================================================================
+
 /**
- * The main Refyne SDK client.
+ * Jobs sub-client for job-related operations.
+ */
+export class JobsClient {
+  constructor(private readonly client: ReturnType<typeof createClient<paths>>) {}
+
+  /** List all jobs. */
+  async list(options?: { limit?: number; offset?: number }) {
+    const { data, error } = await this.client.GET('/api/v1/jobs', {
+      params: { query: options },
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  /** Get a job by ID. */
+  async get(id: string): Promise<JobResponse> {
+    const { data, error } = await this.client.GET('/api/v1/jobs/{id}', {
+      params: { path: { id } },
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  /** Get job results. */
+  async getResults(id: string, options?: { merge?: boolean }) {
+    const { data, error } = await this.client.GET('/api/v1/jobs/{id}/results', {
+      params: {
+        path: { id },
+        query: options,
+      },
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  /** Download job results as a file. */
+  async download(id: string) {
+    const { data, error } = await this.client.GET('/api/v1/jobs/{id}/download', {
+      params: { path: { id } },
+    });
+    if (error) throw error;
+    return data;
+  }
+}
+
+/**
+ * Schemas sub-client for schema management.
+ */
+export class SchemasClient {
+  constructor(private readonly client: ReturnType<typeof createClient<paths>>) {}
+
+  /** List all schemas. */
+  async list() {
+    const { data, error } = await this.client.GET('/api/v1/schemas');
+    if (error) throw error;
+    return data;
+  }
+
+  /** Get a schema by ID. */
+  async get(id: string): Promise<SchemaOutput> {
+    const { data, error } = await this.client.GET('/api/v1/schemas/{id}', {
+      params: { path: { id } },
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  /** Create a new schema. */
+  async create(input: components['schemas']['CreateSchemaInputBody']): Promise<SchemaOutput> {
+    const { data, error } = await this.client.POST('/api/v1/schemas', {
+      body: input,
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  /** Update a schema. */
+  async update(id: string, input: components['schemas']['UpdateSchemaInputBody']): Promise<SchemaOutput> {
+    const { data, error } = await this.client.PUT('/api/v1/schemas/{id}', {
+      params: { path: { id } },
+      body: input,
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  /** Delete a schema. */
+  async delete(id: string) {
+    const { data, error } = await this.client.DELETE('/api/v1/schemas/{id}', {
+      params: { path: { id } },
+    });
+    if (error) throw error;
+    return data;
+  }
+}
+
+/**
+ * Sites sub-client for saved site management.
+ */
+export class SitesClient {
+  constructor(private readonly client: ReturnType<typeof createClient<paths>>) {}
+
+  /** List all saved sites. */
+  async list() {
+    const { data, error } = await this.client.GET('/api/v1/sites');
+    if (error) throw error;
+    return data;
+  }
+
+  /** Get a saved site by ID. */
+  async get(id: string): Promise<SavedSiteOutput> {
+    const { data, error } = await this.client.GET('/api/v1/sites/{id}', {
+      params: { path: { id } },
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  /** Create a new saved site. */
+  async create(input: components['schemas']['CreateSavedSiteInputBody']): Promise<SavedSiteOutput> {
+    const { data, error } = await this.client.POST('/api/v1/sites', {
+      body: input,
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  /** Update a saved site. */
+  async update(id: string, input: components['schemas']['UpdateSavedSiteInputBody']): Promise<SavedSiteOutput> {
+    const { data, error } = await this.client.PUT('/api/v1/sites/{id}', {
+      params: { path: { id } },
+      body: input,
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  /** Delete a saved site. */
+  async delete(id: string) {
+    const { data, error } = await this.client.DELETE('/api/v1/sites/{id}', {
+      params: { path: { id } },
+    });
+    if (error) throw error;
+    return data;
+  }
+}
+
+/**
+ * Keys sub-client for API key management.
+ */
+export class KeysClient {
+  constructor(private readonly client: ReturnType<typeof createClient<paths>>) {}
+
+  /** List all API keys. */
+  async list() {
+    const { data, error } = await this.client.GET('/api/v1/keys');
+    if (error) throw error;
+    return data;
+  }
+
+  /** Create a new API key. */
+  async create(name: string) {
+    const { data, error } = await this.client.POST('/api/v1/keys', {
+      body: { name },
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  /** Revoke an API key. */
+  async revoke(id: string) {
+    const { data, error } = await this.client.DELETE('/api/v1/keys/{id}', {
+      params: { path: { id } },
+    });
+    if (error) throw error;
+    return data;
+  }
+}
+
+/**
+ * LLM sub-client for LLM configuration management.
+ */
+export class LLMClient {
+  constructor(private readonly client: ReturnType<typeof createClient<paths>>) {}
+
+  /** List available LLM providers. */
+  async listProviders() {
+    const { data, error } = await this.client.GET('/api/v1/llm/providers');
+    if (error) throw error;
+    return data;
+  }
+
+  /** List available models for a provider. */
+  async listModels(provider: string) {
+    const { data, error } = await this.client.GET('/api/v1/llm/models/{provider}', {
+      params: { path: { provider } },
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  /** List user's LLM service keys. */
+  async listKeys() {
+    const { data, error } = await this.client.GET('/api/v1/llm/keys');
+    if (error) throw error;
+    return data;
+  }
+
+  /** Upsert an LLM service key. */
+  async upsertKey(input: components['schemas']['UserServiceKeyInput']) {
+    const { data, error } = await this.client.PUT('/api/v1/llm/keys', {
+      body: input,
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  /** Delete an LLM service key. */
+  async deleteKey(id: string) {
+    const { data, error } = await this.client.DELETE('/api/v1/llm/keys/{id}', {
+      params: { path: { id } },
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  /** Get user's LLM fallback chain. */
+  async getChain() {
+    const { data, error } = await this.client.GET('/api/v1/llm/chain');
+    if (error) throw error;
+    return data;
+  }
+
+  /** Set user's LLM fallback chain. */
+  async setChain(input: components['schemas']['SetUserFallbackChainInputBody']) {
+    const { data, error } = await this.client.PUT('/api/v1/llm/chain', {
+      body: input,
+    });
+    if (error) throw error;
+    return data;
+  }
+}
+
+// =============================================================================
+// Main Client
+// =============================================================================
+
+/**
+ * Refyne API client.
  *
- * Provides methods for extracting data from web pages, managing crawl jobs,
- * and configuring LLM providers.
+ * Provides type-safe access to the Refyne API.
  *
  * @example
  * ```typescript
- * import { Refyne } from '@refyne/sdk';
- *
- * const refyne = new Refyne.Builder()
- *   .apiKey(process.env.REFYNE_API_KEY!)
- *   .build();
+ * const client = new Refyne({ apiKey: process.env.REFYNE_API_KEY! });
  *
  * // Extract data from a page
- * const result = await refyne.extract({
+ * const result = await client.extract({
  *   url: 'https://example.com/product',
- *   schema: {
- *     name: 'string',
- *     price: 'number',
- *   },
+ *   schema: { name: { type: 'string' }, price: { type: 'number' } }
  * });
  *
- * console.log(result.data);
+ * // Use sub-clients for organized access
+ * const jobs = await client.jobs.list();
+ * const schemas = await client.schemas.list();
  * ```
  */
 export class Refyne {
-  /** Builder class for fluent configuration */
+  /** Static builder for fluent construction */
   static Builder = RefyneBuilder;
 
-  private readonly apiKey: string;
-  private readonly baseUrl: string;
-  private readonly timeout: number;
-  private readonly maxRetries: number;
+  private readonly httpClient: ReturnType<typeof createClient<paths>>;
+  private readonly config: Required<Omit<RefyneConfig, 'userAgentSuffix'>> & { userAgentSuffix?: string };
   private readonly logger: Logger;
-  private readonly httpClient: HttpClient;
-  private readonly cache: Cache;
-  private readonly cacheEnabled: boolean;
-  private readonly userAgent: string;
-  private readonly dangerouslyDisableTLSVerification: boolean;
-
   private apiVersionChecked = false;
-  private authHash: string;
 
-  /** Job-related operations */
+  /** Sub-client for job operations */
   readonly jobs: JobsClient;
-
-  /** Schema catalog operations */
+  /** Sub-client for schema operations */
   readonly schemas: SchemasClient;
-
-  /** Saved sites operations */
+  /** Sub-client for site operations */
   readonly sites: SitesClient;
-
-  /** API key management */
+  /** Sub-client for API key operations */
   readonly keys: KeysClient;
-
-  /** LLM configuration operations */
-  readonly llm: LlmClient;
+  /** Sub-client for LLM configuration */
+  readonly llm: LLMClient;
 
   constructor(config: RefyneConfig) {
-    this.apiKey = config.apiKey;
-    this.baseUrl = config.baseUrl?.replace(/\/$/, '') ?? 'https://api.refyne.uk';
-    this.timeout = config.timeout ?? 30000;
-    this.maxRetries = config.maxRetries ?? 3;
-    this.logger = config.logger ?? defaultLogger;
-    this.httpClient = config.httpClient ?? defaultHttpClient;
-    this.cache = config.cache ?? new MemoryCache({ logger: this.logger });
-    this.cacheEnabled = config.cacheEnabled ?? true;
-    this.userAgent = buildUserAgent(config.userAgentSuffix);
-    this.dangerouslyDisableTLSVerification = config.dangerouslyDisableTLSVerification ?? false;
+    this.config = {
+      apiKey: config.apiKey,
+      baseUrl: (config.baseUrl || DEFAULT_BASE_URL).replace(/\/$/, ''),
+      timeout: config.timeout || DEFAULT_TIMEOUT,
+      maxRetries: config.maxRetries || DEFAULT_MAX_RETRIES,
+      logger: config.logger || defaultLogger,
+      cache: config.cache || new MemoryCache(),
+      cacheEnabled: config.cacheEnabled !== false,
+      userAgentSuffix: config.userAgentSuffix,
+    };
 
-    // Hash the API key for cache key generation
-    this.authHash = hashString(this.apiKey);
+    this.logger = this.config.logger;
 
-    // Warn about insecure connections
-    if (!this.baseUrl.startsWith('https://')) {
-      this.logger.warn('API base URL is not using HTTPS. This is insecure.', {
-        baseUrl: this.baseUrl,
-      });
-    }
+    // Create openapi-fetch client with middleware
+    this.httpClient = createClient<paths>({
+      baseUrl: this.config.baseUrl,
+      headers: {
+        'Authorization': `Bearer ${this.config.apiKey}`,
+        'User-Agent': buildUserAgent(this.config.userAgentSuffix),
+        'X-SDK-Version': SDK_VERSION,
+      },
+    });
 
-    if (this.dangerouslyDisableTLSVerification) {
-      this.logger.warn(
-        'TLS certificate verification is disabled. This is dangerous and should only be used for development.',
-        { baseUrl: this.baseUrl }
-      );
-    }
+    // Add middleware for error handling and API version checking
+    this.httpClient.use(this.createErrorMiddleware());
 
     // Initialize sub-clients
-    this.jobs = new JobsClient(this);
-    this.schemas = new SchemasClient(this);
-    this.sites = new SitesClient(this);
-    this.keys = new KeysClient(this);
-    this.llm = new LlmClient(this);
+    this.jobs = new JobsClient(this.httpClient);
+    this.schemas = new SchemasClient(this.httpClient);
+    this.sites = new SitesClient(this.httpClient);
+    this.keys = new KeysClient(this.httpClient);
+    this.llm = new LLMClient(this.httpClient);
   }
+
+  private createErrorMiddleware(): Middleware {
+    return {
+      onResponse: async ({ response }) => {
+        // Check API version on first successful response
+        if (!this.apiVersionChecked && response.ok) {
+          const apiVersion = response.headers.get('X-API-Version');
+          if (apiVersion) {
+            checkAPIVersionCompatibility(apiVersion, this.logger);
+          }
+          this.apiVersionChecked = true;
+        }
+
+        // Handle error responses
+        if (!response.ok) {
+          const error = await createErrorFromResponse(response);
+          throw error;
+        }
+
+        return response;
+      },
+    };
+  }
+
+  // =========================================================================
+  // Core Extraction Methods (top-level for convenience)
+  // =========================================================================
 
   /**
    * Extract structured data from a single web page.
-   *
-   * @param request - Extraction request with URL and schema
-   * @returns Extracted data matching the schema
-   *
-   * @example
-   * ```typescript
-   * const result = await refyne.extract({
-   *   url: 'https://example.com/product/123',
-   *   schema: {
-   *     name: 'string',
-   *     price: 'number',
-   *     description: 'string',
-   *   },
-   * });
-   *
-   * console.log(result.data.name);  // "Product Name"
-   * console.log(result.data.price); // 29.99
-   * ```
    */
-  async extract<T extends Record<string, unknown> = Record<string, unknown>>(
-    request: ExtractRequest
-  ): Promise<ExtractResponse & { data: T }> {
-    return this.request<ExtractResponse & { data: T }>('POST', '/api/v1/extract', request);
-  }
-
-  /**
-   * Start an asynchronous crawl job.
-   *
-   * @param request - Crawl request with URL, schema, and options
-   * @returns Job creation response with job ID
-   *
-   * @example
-   * ```typescript
-   * const job = await refyne.crawl({
-   *   url: 'https://example.com/products',
-   *   schema: { name: 'string', price: 'number' },
-   *   options: {
-   *     followSelector: 'a.product-link',
-   *     maxPages: 20,
-   *   },
-   * });
-   *
-   * // Poll for completion
-   * let status = await refyne.jobs.get(job.jobId);
-   * while (status.status === 'running') {
-   *   await new Promise(r => setTimeout(r, 2000));
-   *   status = await refyne.jobs.get(job.jobId);
-   * }
-   *
-   * // Get results
-   * const results = await refyne.jobs.getResults(job.jobId);
-   * ```
-   */
-  async crawl(request: CrawlRequest): Promise<CrawlJobCreated> {
-    return this.request<CrawlJobCreated>('POST', '/api/v1/crawl', request);
-  }
-
-  /**
-   * Analyze a website to detect structure and suggest schemas.
-   *
-   * @param request - Analysis request with URL and depth
-   * @returns Analysis results with suggested schema and patterns
-   *
-   * @example
-   * ```typescript
-   * const analysis = await refyne.analyze({
-   *   url: 'https://example.com/products',
-   *   depth: 1,
-   * });
-   *
-   * console.log(analysis.suggestedSchema);
-   * console.log(analysis.followPatterns);
-   * ```
-   */
-  async analyze(request: AnalyzeRequest): Promise<AnalyzeResponse> {
-    return this.request<AnalyzeResponse>('POST', '/api/v1/analyze', request);
-  }
-
-  /**
-   * Get usage statistics for the current billing period.
-   *
-   * @returns Usage statistics including credits used and remaining
-   */
-  async getUsage(): Promise<UsageResponse> {
-    return this.request<UsageResponse>('GET', '/api/v1/usage');
-  }
-
-  /**
-   * Make an HTTP request to the API.
-   * @internal
-   */
-  async request<T>(
-    method: string,
-    path: string,
-    body?: unknown,
-    options?: { skipCache?: boolean }
-  ): Promise<T> {
-    const url = `${this.baseUrl}${path}`;
-    const cacheKey = generateCacheKey(method, url, this.authHash);
-
-    // Check cache for GET requests
-    if (method === 'GET' && this.cacheEnabled && !options?.skipCache) {
-      const cached = await this.cache.get(cacheKey);
-      if (cached) {
-        return cached.value as T;
-      }
-    }
-
-    const response = await this.executeWithRetry(method, url, body);
-
-    // Check API version on first request
-    if (!this.apiVersionChecked) {
-      const apiVersion = response.headers.get('X-API-Version');
-      if (apiVersion) {
-        checkAPIVersionCompatibility(apiVersion, this.logger);
-      } else {
-        this.logger.warn('API did not return X-API-Version header');
-      }
-      this.apiVersionChecked = true;
-    }
-
-    // Parse response
-    if (!response.ok) {
-      throw await createErrorFromResponse(response);
-    }
-
-    const data = await response.json() as T;
-
-    // Cache GET responses
-    if (method === 'GET' && this.cacheEnabled) {
-      const cacheControl = response.headers.get('Cache-Control');
-      const entry = createCacheEntry(data, cacheControl);
-      if (entry) {
-        await this.cache.set(cacheKey, entry);
-      }
-    }
-
+  async extract(request: ExtractRequest): Promise<ExtractResponse> {
+    const { data, error } = await this.httpClient.POST('/api/v1/extract', {
+      body: request,
+    });
+    if (error) throw error;
     return data;
   }
 
   /**
-   * Execute a request with retry logic.
-   * @internal
+   * Start an asynchronous crawl job.
    */
-  private async executeWithRetry(
-    method: string,
-    url: string,
-    body?: unknown,
-    attempt = 1
-  ): Promise<Response> {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-
-    try {
-      const response = await this.httpClient.fetch(url, {
-        method,
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json',
-          'User-Agent': this.userAgent,
-          'Accept': 'application/json',
-        },
-        body: body ? JSON.stringify(body) : undefined,
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      // Handle rate limiting with retry
-      if (response.status === 429 && attempt <= this.maxRetries) {
-        const retryAfter = parseInt(response.headers.get('Retry-After') || '1', 10);
-        this.logger.warn(`Rate limited. Retrying in ${retryAfter}s`, {
-          attempt,
-          maxRetries: this.maxRetries,
-        });
-        await this.sleep(retryAfter * 1000);
-        return this.executeWithRetry(method, url, body, attempt + 1);
-      }
-
-      // Handle server errors with retry
-      if (response.status >= 500 && attempt <= this.maxRetries) {
-        const backoff = Math.min(1000 * Math.pow(2, attempt - 1), 30000);
-        this.logger.warn(`Server error. Retrying in ${backoff}ms`, {
-          status: response.status,
-          attempt,
-          maxRetries: this.maxRetries,
-        });
-        await this.sleep(backoff);
-        return this.executeWithRetry(method, url, body, attempt + 1);
-      }
-
-      return response;
-    } catch (error) {
-      clearTimeout(timeoutId);
-
-      if ((error as Error).name === 'AbortError') {
-        throw new RefyneError(`Request timed out after ${this.timeout}ms`, 0);
-      }
-
-      // Retry on network errors
-      if (attempt <= this.maxRetries) {
-        const backoff = Math.min(1000 * Math.pow(2, attempt - 1), 30000);
-        this.logger.warn(`Network error. Retrying in ${backoff}ms`, {
-          error: (error as Error).message,
-          attempt,
-          maxRetries: this.maxRetries,
-        });
-        await this.sleep(backoff);
-        return this.executeWithRetry(method, url, body, attempt + 1);
-      }
-
-      throw new RefyneError(
-        `Network error: ${(error as Error).message}`,
-        0
-      );
-    }
-  }
-
-  private sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-}
-
-/**
- * Client for job-related operations.
- */
-class JobsClient {
-  constructor(private readonly client: Refyne) {}
-
-  /**
-   * List all jobs.
-   */
-  async list(options?: { limit?: number; offset?: number }): Promise<JobList> {
-    const params = new URLSearchParams();
-    if (options?.limit) params.set('limit', String(options.limit));
-    if (options?.offset) params.set('offset', String(options.offset));
-    const query = params.toString();
-    return this.client.request<JobList>('GET', `/api/v1/jobs${query ? `?${query}` : ''}`);
+  async crawl(request: CrawlRequest): Promise<CrawlJobResponse> {
+    const { data, error } = await this.httpClient.POST('/api/v1/crawl', {
+      body: request,
+    });
+    if (error) throw error;
+    return data;
   }
 
   /**
-   * Get a job by ID.
+   * Analyze a website to detect structure and suggest schemas.
    */
-  async get(id: string): Promise<Job> {
-    return this.client.request<Job>('GET', `/api/v1/jobs/${id}`, undefined, { skipCache: true });
+  async analyze(request: AnalyzeRequest): Promise<AnalyzeResponse> {
+    const { data, error } = await this.httpClient.POST('/api/v1/analyze', {
+      body: request,
+    });
+    if (error) throw error;
+    return data;
   }
 
   /**
-   * Get job results.
+   * Get usage statistics for the current billing period.
    */
-  async getResults(id: string, options?: { merge?: boolean }): Promise<JobResults> {
-    const params = new URLSearchParams();
-    if (options?.merge) params.set('merge', 'true');
-    const query = params.toString();
-    return this.client.request<JobResults>(
-      'GET',
-      `/api/v1/jobs/${id}/results${query ? `?${query}` : ''}`,
-      undefined,
-      { skipCache: true }
-    );
+  async getUsage(): Promise<UsageResponse> {
+    const { data, error } = await this.httpClient.GET('/api/v1/usage');
+    if (error) throw error;
+    return data;
+  }
+
+  // =========================================================================
+  // Utility Methods
+  // =========================================================================
+
+  /**
+   * Get the raw openapi-fetch client for advanced usage.
+   */
+  get rawClient() {
+    return this.httpClient;
   }
 
   /**
-   * Get merged results as a single object.
+   * Get SDK version information.
    */
-  async getResultsMerged<T extends Record<string, unknown> = Record<string, unknown>>(
-    id: string
-  ): Promise<T> {
-    const results = await this.getResults(id, { merge: true });
-    return (results.merged ?? {}) as T;
-  }
-
-  /**
-   * Stream job results in real-time using SSE.
-   *
-   * @param id - Job ID to stream
-   * @returns AsyncIterator of job events
-   *
-   * @example
-   * ```typescript
-   * for await (const event of refyne.jobs.stream(jobId)) {
-   *   switch (event.type) {
-   *     case 'progress':
-   *       console.log(`Processed ${event.pagesProcessed} pages`);
-   *       break;
-   *     case 'result':
-   *       console.log(`Got result from ${event.url}:`, event.data);
-   *       break;
-   *     case 'complete':
-   *       console.log(`Job completed with ${event.pageCount} pages`);
-   *       break;
-   *   }
-   * }
-   * ```
-   */
-  async *stream(_id: string): AsyncIterableIterator<JobEvent> {
-    // Note: This is a simplified implementation.
-    // Full SSE support would require EventSource or a streaming fetch.
-    throw new RefyneError('Streaming not yet implemented', 0);
+  get version() {
+    return {
+      sdk: SDK_VERSION,
+      minApi: MIN_API_VERSION,
+      maxKnownApi: MAX_KNOWN_API_VERSION,
+    };
   }
 }
 
-/**
- * Client for schema catalog operations.
- */
-class SchemasClient {
-  constructor(private readonly client: Refyne) {}
-
-  /** List all schemas (user + platform) */
-  async list(): Promise<SchemaList> {
-    return this.client.request<SchemaList>('GET', '/api/v1/schemas');
-  }
-
-  /** Get a schema by ID */
-  async get(id: string): Promise<Schema> {
-    return this.client.request<Schema>('GET', `/api/v1/schemas/${id}`);
-  }
-
-  /** Create a new schema */
-  async create(request: CreateSchemaRequest): Promise<Schema> {
-    return this.client.request<Schema>('POST', '/api/v1/schemas', request);
-  }
-
-  /** Update a schema */
-  async update(id: string, request: Partial<CreateSchemaRequest>): Promise<Schema> {
-    return this.client.request<Schema>('PUT', `/api/v1/schemas/${id}`, request);
-  }
-
-  /** Delete a schema */
-  async delete(id: string): Promise<void> {
-    await this.client.request<void>('DELETE', `/api/v1/schemas/${id}`);
-  }
-}
-
-/**
- * Client for saved sites operations.
- */
-class SitesClient {
-  constructor(private readonly client: Refyne) {}
-
-  /** List all saved sites */
-  async list(): Promise<SiteList> {
-    return this.client.request<SiteList>('GET', '/api/v1/sites');
-  }
-
-  /** Get a site by ID */
-  async get(id: string): Promise<Site> {
-    return this.client.request<Site>('GET', `/api/v1/sites/${id}`);
-  }
-
-  /** Create a new saved site */
-  async create(request: CreateSiteRequest): Promise<Site> {
-    return this.client.request<Site>('POST', '/api/v1/sites', request);
-  }
-
-  /** Update a saved site */
-  async update(id: string, request: Partial<CreateSiteRequest>): Promise<Site> {
-    return this.client.request<Site>('PUT', `/api/v1/sites/${id}`, request);
-  }
-
-  /** Delete a saved site */
-  async delete(id: string): Promise<void> {
-    await this.client.request<void>('DELETE', `/api/v1/sites/${id}`);
-  }
-}
-
-/**
- * Client for API key management.
- */
-class KeysClient {
-  constructor(private readonly client: Refyne) {}
-
-  /** List all API keys */
-  async list(): Promise<ApiKeyList> {
-    return this.client.request<ApiKeyList>('GET', '/api/v1/keys');
-  }
-
-  /** Create a new API key */
-  async create(request: CreateApiKeyRequest): Promise<ApiKeyCreated> {
-    return this.client.request<ApiKeyCreated>('POST', '/api/v1/keys', request);
-  }
-
-  /** Revoke an API key */
-  async revoke(id: string): Promise<void> {
-    await this.client.request<void>('DELETE', `/api/v1/keys/${id}`);
-  }
-}
-
-/**
- * Client for LLM configuration.
- */
-class LlmClient {
-  constructor(private readonly client: Refyne) {}
-
-  /** List available LLM providers */
-  async listProviders(): Promise<{ providers: string[] }> {
-    return this.client.request<{ providers: string[] }>('GET', '/api/v1/llm/providers');
-  }
-
-  /** List configured provider keys (BYOK) */
-  async listKeys(): Promise<LlmKeyList> {
-    return this.client.request<LlmKeyList>('GET', '/api/v1/llm/keys');
-  }
-
-  /** Add or update a provider key */
-  async upsertKey(request: UpsertLlmKeyRequest): Promise<LlmKey> {
-    return this.client.request<LlmKey>('PUT', '/api/v1/llm/keys', request);
-  }
-
-  /** Delete a provider key */
-  async deleteKey(id: string): Promise<void> {
-    await this.client.request<void>('DELETE', `/api/v1/llm/keys/${id}`);
-  }
-
-  /** Get the fallback chain configuration */
-  async getChain(): Promise<LlmChain> {
-    return this.client.request<LlmChain>('GET', '/api/v1/llm/chain');
-  }
-
-  /** Set the fallback chain configuration */
-  async setChain(request: SetLlmChainRequest): Promise<void> {
-    await this.client.request<void>('PUT', '/api/v1/llm/chain', request);
-  }
-
-  /** List available models for a provider */
-  async listModels(provider: string): Promise<ModelList> {
-    return this.client.request<ModelList>('GET', `/api/v1/llm/models/${provider}`);
-  }
-}
+// Default export
+export default Refyne;

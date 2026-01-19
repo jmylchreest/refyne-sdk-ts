@@ -1,6 +1,8 @@
 # Refyne SDK for TypeScript
 
-Official TypeScript SDK for the [Refyne API](https://docs.refyne.uk) - LLM-powered web extraction that transforms unstructured websites into clean, typed JSON data.
+Official TypeScript SDK for the [Refyne API](https://refyne.uk/docs) - LLM-powered web extraction that transforms unstructured websites into clean, typed JSON data.
+
+**API Endpoint**: `https://api.refyne.uk` | **Documentation**: [refyne.uk/docs](https://refyne.uk/docs)
 
 [![npm version](https://badge.fury.io/js/@refyne%2Fsdk.svg)](https://www.npmjs.com/package/@refyne/sdk)
 [![CI](https://github.com/jmylchreest/refyne-sdk-ts/actions/workflows/test.yml/badge.svg)](https://github.com/jmylchreest/refyne-sdk-ts/actions/workflows/test.yml)

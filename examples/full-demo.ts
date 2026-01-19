@@ -99,8 +99,12 @@ async function sleep(ms: number): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  const API_KEY = 'YOUR_API_KEY';
-  const BASE_URL = 'http://localhost:8080';
+  const API_KEY = process.env.REFYNE_API_KEY;
+  if (!API_KEY) {
+    console.error('Error: REFYNE_API_KEY environment variable is required');
+    process.exit(1);
+  }
+  const BASE_URL = process.env.REFYNE_BASE_URL || 'https://api.refyne.uk';
   const TEST_URL = 'https://www.bbc.co.uk/news';
 
   // Banner
@@ -191,12 +195,17 @@ async function main(): Promise<void> {
     const analysis = await client.analyze({ url: TEST_URL });
     spinner.succeed('Website analysis complete');
 
-    suggestedSchema = analysis.suggestedSchema;
-    info('Suggested Schema', '');
+    // suggested_schema is a YAML string - display it and use fallback dict
+    info('Suggested Schema (YAML)', '');
+    console.log(colors.dim + analysis.suggested_schema + colors.reset);
+    // Use a simple dict schema for extraction demo
+    suggestedSchema = { headline: 'string', summary: 'string' };
+    info('Using simplified schema for demo', '');
     json(suggestedSchema);
 
-    if (analysis.followPatterns.length > 0) {
-      info('Follow Patterns', analysis.followPatterns.join(', '));
+    if (analysis.follow_patterns && analysis.follow_patterns.length > 0) {
+      const patterns = analysis.follow_patterns.map(p => p.pattern).join(', ');
+      info('Follow Patterns', patterns);
     }
   } catch (err) {
     spinner.fail('Analysis unavailable');
@@ -230,14 +239,14 @@ async function main(): Promise<void> {
     spinner.succeed('Extraction complete');
 
     subheader('Result');
-    info('Fetched At', result.fetchedAt);
+    info('Fetched At', result.fetched_at);
     if (result.usage) {
-      info('Tokens', `${result.usage.inputTokens} in / ${result.usage.outputTokens} out`);
-      info('Cost', `$${result.usage.costUsd.toFixed(6)}`);
+      info('Tokens', `${result.usage.input_tokens} in / ${result.usage.output_tokens} out`);
+      info('Cost', `$${result.usage.cost_usd.toFixed(6)}`);
     }
     if (result.metadata) {
       info('Model', `${result.metadata.provider}/${result.metadata.model}`);
-      info('Duration', `${result.metadata.fetchDurationMs}ms fetch + ${result.metadata.extractDurationMs}ms extract`);
+      info('Duration', `${result.metadata.fetch_duration_ms}ms fetch + ${result.metadata.extract_duration_ms}ms extract`);
     }
 
     subheader('Extracted Data');
@@ -264,12 +273,12 @@ async function main(): Promise<void> {
       url: TEST_URL,
       schema,
       options: {
-        maxUrls: 5,
-        maxDepth: 1,
+        max_urls: 5,
+        max_depth: 1,
       },
     });
     spinner.succeed('Crawl job started');
-    jobId = crawlResult.jobId;
+    jobId = crawlResult.job_id;
 
     info('Job ID', jobId);
     info('Status', crawlResult.status);

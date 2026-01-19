@@ -47,7 +47,7 @@
   "bugs": {
     "url": "https://github.com/jmylchreest/refyne-sdk-ts/issues"
   },
-  "homepage": "https://docs.refyne.uk/docs/sdks/typescript",
+  "homepage": "https://refyne.uk/docs/sdks/typescript",
   "engines": {
     "node": ">=18.0.0"
   },
@@ -70,5 +70,8 @@
     "undici": {
       "optional": true
     }
+  },
+  "dependencies": {
+    "openapi-fetch": "^0.15.0"
   }
 }
