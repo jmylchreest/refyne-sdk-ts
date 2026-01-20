@@ -9,6 +9,16 @@ on:
         description: 'OpenAPI spec URL (leave empty for default)'
         required: false
         type: string
+      api_major:
+        description: 'API major version'
+        required: false
+        type: string
+        default: '0'
+      api_minor:
+        description: 'API minor version'
+        required: false
+        type: string
+        default: '0'
 
 jobs:
   sync:
@@ -35,13 +45,42 @@ jobs:
         run: |
           git diff --exit-code src/types.ts || echo "has_changes=true" >> $GITHUB_OUTPUT
 
+      - name: Update version
+        if: steps.git-check.outputs.has_changes == 'true'
+        id: version
+        run: |
+          # Get API major.minor from payload or inputs
+          API_MAJOR="${{ github.event.client_payload.api_major || github.event.inputs.api_major || '0' }}"
+          API_MINOR="${{ github.event.client_payload.api_minor || github.event.inputs.api_minor || '0' }}"
+
+          # Get current version
+          CURRENT=$(jq -r .version package.json)
+          CURRENT_MAJOR=$(echo $CURRENT | cut -d. -f1)
+          CURRENT_MINOR=$(echo $CURRENT | cut -d. -f2)
+          CURRENT_PATCH=$(echo $CURRENT | cut -d. -f3)
+
+          # If API major.minor changed, reset patch to 0, otherwise bump patch
+          if [ "$API_MAJOR" != "$CURRENT_MAJOR" ] || [ "$API_MINOR" != "$CURRENT_MINOR" ]; then
+            NEW_VERSION="${API_MAJOR}.${API_MINOR}.0"
+          else
+            NEW_PATCH=$((CURRENT_PATCH + 1))
+            NEW_VERSION="${API_MAJOR}.${API_MINOR}.${NEW_PATCH}"
+          fi
+
+          echo "Updating version: $CURRENT -> $NEW_VERSION"
+          npm version $NEW_VERSION --no-git-tag-version
+
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
       - name: Commit changes
         if: steps.git-check.outputs.has_changes == 'true'
+        env:
+          API_SHA: ${{ github.event.client_payload.api_sha || 'manual' }}
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add src/types.ts
-          git commit -m "chore: sync types from OpenAPI spec"
+          git add src/types.ts package.json package-lock.json
+          git commit -m "chore: sync types from API ($API_SHA) - v${{ steps.version.outputs.new_version }}"
 
       - name: Push changes
         if: steps.git-check.outputs.has_changes == 'true'
