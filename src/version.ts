@@ -112,8 +112,10 @@ export function detectRuntime(): { name: string; version: string } {
   }
 
   // Check for Node.js
-  if (typeof process !== 'undefined' && (process as NodeJS.Process).versions?.node) {
-    return { name: 'Node', version: (process as NodeJS.Process).versions.node };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  if (typeof process !== 'undefined' && (process as any).versions?.node) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return { name: 'Node', version: (process as any).versions.node };
   }
 
   // Browser or unknown

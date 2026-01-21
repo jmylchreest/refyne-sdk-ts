@@ -124,7 +124,8 @@ export interface Cache {
  */
 export const defaultLogger: Logger = {
   debug: (msg, meta) => {
-    if (typeof process !== 'undefined' && (process as NodeJS.Process).env?.DEBUG) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (typeof process !== 'undefined' && (process as any).env?.DEBUG) {
       console.debug(`[Refyne SDK] ${msg}`, meta || '');
     }
   },
