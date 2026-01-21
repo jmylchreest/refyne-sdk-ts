@@ -124,7 +124,7 @@ export interface Cache {
  */
 export const defaultLogger: Logger = {
   debug: (msg, meta) => {
-    if (process.env.DEBUG) {
+    if (typeof process !== 'undefined' && (process as NodeJS.Process).env?.DEBUG) {
       console.debug(`[Refyne SDK] ${msg}`, meta || '');
     }
   },

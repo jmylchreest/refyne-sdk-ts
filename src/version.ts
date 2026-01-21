@@ -112,8 +112,8 @@ export function detectRuntime(): { name: string; version: string } {
   }
 
   // Check for Node.js
-  if (typeof process !== 'undefined' && process.versions?.node) {
-    return { name: 'Node', version: process.versions.node };
+  if (typeof process !== 'undefined' && (process as NodeJS.Process).versions?.node) {
+    return { name: 'Node', version: (process as NodeJS.Process).versions.node };
   }
 
   // Browser or unknown
