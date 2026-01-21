@@ -124,8 +124,10 @@ export interface Cache {
  */
 export const defaultLogger: Logger = {
   debug: (msg, meta) => {
+    // Use globalThis to avoid Deno type errors with process
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (typeof process !== 'undefined' && (process as any).env?.DEBUG) {
+    const proc = 'process' in globalThis ? (globalThis as any).process : undefined;
+    if (proc?.env?.DEBUG) {
       console.debug(`[Refyne SDK] ${msg}`, meta || '');
     }
   },

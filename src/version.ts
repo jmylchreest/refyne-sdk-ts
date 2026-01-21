@@ -111,11 +111,13 @@ export function detectRuntime(): { name: string; version: string } {
     return { name: 'Deno', version: deno.version.deno };
   }
 
-  // Check for Node.js
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  if (typeof process !== 'undefined' && (process as any).versions?.node) {
+  // Check for Node.js (use globalThis to avoid Deno type errors)
+  if ('process' in globalThis) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return { name: 'Node', version: (process as any).versions.node };
+    const proc = (globalThis as any).process;
+    if (proc?.versions?.node) {
+      return { name: 'Node', version: proc.versions.node };
+    }
   }
 
   // Browser or unknown
