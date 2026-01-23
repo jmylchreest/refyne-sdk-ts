@@ -4,162 +4,6 @@
  */
 
 export interface paths {
-    "/api/v1/admin/fallback-chain": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get admin fallback chain */
-        get: operations["adminGetFallbackChain"];
-        /** Set admin fallback chain */
-        put: operations["adminSetFallbackChain"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/models/validate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Validate models */
-        post: operations["adminValidateModels"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/models/{provider}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List models for provider (admin) */
-        get: operations["adminListModels"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/schemas": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List all schemas (admin) */
-        get: operations["adminListSchemas"];
-        put?: never;
-        /** Create platform schema */
-        post: operations["adminCreatePlatformSchema"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/service-keys": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List service keys */
-        get: operations["adminListServiceKeys"];
-        /** Upsert service key */
-        put: operations["adminUpsertServiceKey"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/service-keys/{provider}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Delete service key */
-        delete: operations["adminDeleteServiceKey"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/tiers": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List subscription tiers (admin) */
-        get: operations["adminListTiers"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/tiers/sync": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Sync tiers from Clerk */
-        post: operations["adminSyncTiers"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/tiers/validate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Validate tiers */
-        post: operations["adminValidateTiers"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/analyze": {
         parameters: {
             query?: never;
@@ -171,6 +15,26 @@ export interface paths {
         put?: never;
         /** Analyze URL */
         post: operations["analyze"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cleaners": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List content cleaners
+         * @description Returns available content cleaners with their options. Cleaners process HTML before extraction to reduce tokens or extract main content.
+         */
+        get: operations["listCleaners"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -279,6 +143,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/jobs/{id}/debug-capture": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get job debug captures
+         * @description Returns captured LLM prompts and metadata for debugging extraction issues
+         */
+        get: operations["getJobDebugCapture"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/jobs/{id}/download": {
         parameters: {
             query?: never;
@@ -310,21 +194,16 @@ export interface paths {
          *     Supported formats via Accept header or ?format= query parameter:
          *     - **application/json** (default): JSON array of results
          *     - **application/x-ndjson**: Newline-delimited JSON (one result per line)
-         *     - **text/csv**: CSV format with headers
+         *     - **application/yaml**: YAML formatted results
          *
          *     Query parameters:
          *     - **merge=true**: Merge all page results into a single array
-         *     - **format=json|jsonl|csv**: Override content type
+         *     - **format=json|jsonl|yaml**: Override content type
          *
          *     Example:
          *     ```bash
          *     # JSON format (default)
          *     curl -H "Authorization: Bearer rf_your_key" \
-         *          https://api.refyne.dev/api/v1/jobs/{id}/results
-         *
-         *     # CSV format
-         *     curl -H "Authorization: Bearer rf_your_key" \
-         *          -H "Accept: text/csv" \
          *          https://api.refyne.dev/api/v1/jobs/{id}/results
          *
          *     # JSONL format with merge
@@ -690,6 +569,14 @@ export interface components {
             name: string;
             scopes: string[] | null;
         };
+        AdminJobResultsOutputBody: {
+            /** @description Presigned URL to download results (valid for 1 hour) */
+            download_url: string;
+            /** @description URL expiration time */
+            expires_at: string;
+            /** @description Job ID */
+            job_id: string;
+        };
         AnalysisResultInput: {
             /** @description Detected data elements */
             detected_elements?: components["schemas"]["DetectedElementInput"][] | null;
@@ -722,13 +609,32 @@ export interface components {
             /** @description Suggested YAML schema */
             suggested_schema: string;
         };
+        AnalyticsJobResponse: {
+            completed_at?: string;
+            /** Format: double */
+            cost_usd: number;
+            created_at: string;
+            discovery_method?: string;
+            error_category?: string;
+            error_message?: string;
+            id: string;
+            is_byok: boolean;
+            /** Format: double */
+            llm_cost_usd: number;
+            model?: string;
+            provider?: string;
+            status: string;
+            /** Format: int64 */
+            tokens_input: number;
+            /** Format: int64 */
+            tokens_output: number;
+            type: string;
+            url: string;
+            user_id: string;
+        };
         AnalyzeInputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/AnalyzeInputBody.json
-             */
-            readonly $schema?: string;
+            /** @description Capture debug information (LLM prompts/responses). Defaults to true for analyze jobs. */
+            debug?: boolean;
             /**
              * Format: int64
              * @description Crawl depth: 0=single page, 1=one level deep
@@ -745,12 +651,6 @@ export interface components {
             url: string;
         };
         AnalyzeResponseBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/AnalyzeResponseBody.json
-             */
-            readonly $schema?: string;
             /** @description Data elements detected on the page */
             detected_elements: components["schemas"]["DetectedElementOutput"][] | null;
             /** @description URL/selector patterns for crawling */
@@ -770,6 +670,68 @@ export interface components {
             /** @description YAML schema suggestion for extraction */
             suggested_schema: string;
         };
+        CleanerChainItemResponse: {
+            /** @description Cleaner name */
+            name: string;
+        };
+        CleanerConfigInput: {
+            /** @description Cleaner name (noop, markdown, trafilatura, readability) */
+            name: string;
+            /** @description Cleaner-specific options */
+            options?: components["schemas"]["CleanerOptionsInput"];
+        };
+        CleanerOptionResponse: {
+            /** @description Default value if not specified */
+            default: unknown;
+            /** @description Description of what this option does */
+            description: string;
+            /** @description Option name (e.g., 'output', 'tables') */
+            name: string;
+            /** @description Option type (string, boolean) */
+            type: string;
+        };
+        CleanerOptionsInput: {
+            /** @description Base URL for resolving relative links (readability) */
+            base_url?: string;
+            /**
+             * @description Include images in output (trafilatura)
+             * @default true
+             */
+            images: boolean;
+            /** @description CSS selectors for elements to always keep (refyne) */
+            keep_selectors?: string[] | null;
+            /**
+             * @description Include links in output (trafilatura)
+             * @default true
+             */
+            links: boolean;
+            /**
+             * @description Output format for trafilatura/readability
+             * @default html
+             * @enum {string}
+             */
+            output: "html" | "text";
+            /**
+             * @description Refyne preset: default, minimal, or aggressive
+             * @enum {string}
+             */
+            preset?: "default" | "minimal" | "aggressive";
+            /** @description CSS selectors for elements to remove (refyne) */
+            remove_selectors?: string[] | null;
+            /**
+             * @description Include tables in output (trafilatura)
+             * @default true
+             */
+            tables: boolean;
+        };
+        CleanerResponse: {
+            /** @description Description of what this cleaner does */
+            description: string;
+            /** @description Cleaner name to use in cleaner_chain */
+            name: string;
+            /** @description Available options for this cleaner */
+            options?: components["schemas"]["CleanerOptionResponse"][] | null;
+        };
         CrawlInlineWebhookInput: {
             /** @description Event types to subscribe to (empty for all) */
             events?: string[] | null;
@@ -784,12 +746,6 @@ export interface components {
             url: string;
         };
         CrawlJobResponseBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/CrawlJobResponseBody.json
-             */
-            readonly $schema?: string;
             /**
              * Format: double
              * @description Total USD cost charged (sync mode)
@@ -983,17 +939,13 @@ export interface components {
             value: string;
         };
         CreateCrawlJobInputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/CreateCrawlJobInputBody.json
-             */
-            readonly $schema?: string;
+            /** @description Content cleaner chain (default: [markdown]) */
+            cleaner_chain?: components["schemas"]["JobCleanerConfigInput"][] | null;
             /** @description Optional LLM configuration override (BYOK) */
             llm_config?: components["schemas"]["LLMConfigInput"];
             /** @description Crawl configuration options */
             options?: components["schemas"]["CrawlOptions"];
-            /** @description JSON Schema defining the data structure to extract. Example: {"name":"string","price":"number","description":"string"} */
+            /** @description Extraction instructions - either a structured schema (YAML/JSON with 'name' and 'fields') or freeform natural language prompt. The API auto-detects the format. */
             schema: unknown;
             /**
              * @description Seed URL to start crawling from
@@ -1012,12 +964,6 @@ export interface components {
             webhook_url?: string;
         };
         CreateKeyInputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/CreateKeyInputBody.json
-             */
-            readonly $schema?: string;
             /** @description Expiration date (RFC3339) */
             expires_at?: string;
             /** @description Descriptive name for the key */
@@ -1026,12 +972,6 @@ export interface components {
             scopes?: string[] | null;
         };
         CreateKeyOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/CreateKeyOutputBody.json
-             */
-            readonly $schema?: string;
             created_at: string;
             expires_at?: string;
             id: string;
@@ -1042,12 +982,6 @@ export interface components {
             scopes: string[] | null;
         };
         CreatePlatformSchemaInputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/CreatePlatformSchemaInputBody.json
-             */
-            readonly $schema?: string;
             /** @description Schema category */
             category: string;
             /** @description Schema description */
@@ -1060,12 +994,6 @@ export interface components {
             tags?: string[] | null;
         };
         CreateSavedSiteInputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/CreateSavedSiteInputBody.json
-             */
-            readonly $schema?: string;
             /** @description Analysis result to save */
             analysis_result?: components["schemas"]["AnalysisResultInput"];
             /** @description Crawl options */
@@ -1084,12 +1012,6 @@ export interface components {
             url: string;
         };
         CreateSchemaInputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/CreateSchemaInputBody.json
-             */
-            readonly $schema?: string;
             /** @description Schema category */
             category?: string;
             /** @description Schema description */
@@ -1107,51 +1029,84 @@ export interface components {
              */
             visibility: "private" | "public";
         };
-        DeleteSavedSiteOutputBody: {
+        DebugCaptureEntry: {
+            /** @description Preprocessing hints applied */
+            hints_applied?: {
+                [key: string]: string;
+            };
+            /** @description Capture ID */
+            id: string;
+            /** @description Job type (analyze, extract, crawl) */
+            job_type: string;
+            /** @description Full prompt sent to LLM (for analyze jobs) */
+            prompt?: string;
+            /** @description Page content (for extract/crawl jobs) */
+            raw_content?: string;
+            /** @description LLM request metadata */
+            request: components["schemas"]["DebugCaptureLLMRequest"];
+            /** @description LLM response metadata */
+            response: components["schemas"]["DebugCaptureLLMResponse"];
+            /** @description Schema used for extraction */
+            schema?: string;
+            /** @description When the request was made */
+            timestamp: string;
+            /** @description Page URL being processed */
+            url: string;
+        };
+        DebugCaptureLLMRequest: {
             /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/DeleteSavedSiteOutputBody.json
+             * Format: int64
+             * @description Size of content sent to LLM
              */
-            readonly $schema?: string;
+            content_size: number;
+            /** @description Content fetch mode */
+            fetch_mode?: string;
+            /** @description LLM model used */
+            model: string;
+            /**
+             * Format: int64
+             * @description Total prompt size including system instructions
+             */
+            prompt_size: number;
+            /** @description LLM provider used */
+            provider: string;
+        };
+        DebugCaptureLLMResponse: {
+            /**
+             * Format: int64
+             * @description Request duration in milliseconds
+             */
+            duration_ms: number;
+            /** @description Error message if failed */
+            error?: string;
+            /**
+             * Format: int64
+             * @description Input tokens consumed
+             */
+            input_tokens: number;
+            /**
+             * Format: int64
+             * @description Output tokens generated
+             */
+            output_tokens: number;
+            /** @description Whether the request succeeded */
+            success: boolean;
+        };
+        DeleteSavedSiteOutputBody: {
             /** @description Whether deletion was successful */
             success: boolean;
         };
         DeleteSchemaOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/DeleteSchemaOutputBody.json
-             */
-            readonly $schema?: string;
             /** @description Whether deletion was successful */
             success: boolean;
         };
         DeleteServiceKeyOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/DeleteServiceKeyOutputBody.json
-             */
-            readonly $schema?: string;
             success: boolean;
         };
         DeleteUserServiceKeyOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/DeleteUserServiceKeyOutputBody.json
-             */
-            readonly $schema?: string;
             success: boolean;
         };
         DeleteWebhookOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/DeleteWebhookOutputBody.json
-             */
-            readonly $schema?: string;
             /** @description Whether deletion was successful */
             success: boolean;
         };
@@ -1181,6 +1136,14 @@ export interface components {
             /** @description Data type: string, number, boolean, array, url, date */
             type: string;
         };
+        ErrorCategoryResponse: {
+            category: string;
+            /** Format: int64 */
+            count: number;
+            /** Format: double */
+            percentage: number;
+            sample_messages?: string[] | null;
+        };
         ErrorDetail: {
             /** @description Where the error occurred, e.g. 'body.items[3].tags' or 'path.thing-id' */
             location?: string;
@@ -1190,12 +1153,6 @@ export interface components {
             value?: unknown;
         };
         ErrorModel: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/ErrorModel.json
-             */
-            readonly $schema?: string;
             /**
              * @description A human-readable explanation specific to this occurrence of the problem.
              * @example Property foo is required but is missing.
@@ -1242,12 +1199,8 @@ export interface components {
             total: number;
         };
         ExtractInputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/ExtractInputBody.json
-             */
-            readonly $schema?: string;
+            /** @description Content cleaner chain (default: [markdown]) */
+            cleaner_chain?: components["schemas"]["CleanerConfigInput"][] | null;
             /**
              * @description Fetch mode: auto, static, or dynamic
              * @default auto
@@ -1256,7 +1209,7 @@ export interface components {
             fetch_mode: "auto" | "static" | "dynamic";
             /** @description Optional LLM configuration override */
             llm_config?: components["schemas"]["LLMConfigInput"];
-            /** @description Schema defining the data structure to extract (JSON or YAML format) */
+            /** @description Extraction instructions - either a structured schema (YAML/JSON with 'name' and 'fields') or freeform natural language prompt. The API auto-detects the format and returns 'input_format' in the response. */
             schema: unknown;
             /** @description URL to extract data from */
             url: string;
@@ -1271,16 +1224,12 @@ export interface components {
             webhook_url?: string;
         };
         ExtractOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/ExtractOutputBody.json
-             */
-            readonly $schema?: string;
             /** @description Extracted data matching the schema */
             data: unknown;
             /** @description Timestamp when the page was fetched */
             fetched_at: string;
+            /** @description How the input was interpreted: 'schema' (structured YAML/JSON) or 'prompt' (freeform text) */
+            input_format: string;
             /** @description Job ID for this extraction (for history/tracking) */
             job_id: string;
             /** @description Extraction metadata */
@@ -1289,6 +1238,11 @@ export interface components {
             url: string;
             /** @description Token usage information */
             usage: components["schemas"]["UsageResponse"];
+        };
+        FailingURLResponse: {
+            /** Format: int64 */
+            count: number;
+            url: string;
         };
         FallbackChainEntryInput: {
             /** @description Whether this entry is enabled */
@@ -1342,13 +1296,17 @@ export interface components {
             /** @description Example URLs matching this pattern */
             sample_urls?: string[] | null;
         };
+        GetAnalyticsJobsOutputBody: {
+            jobs: components["schemas"]["AnalyticsJobResponse"][] | null;
+            /** Format: int64 */
+            total_count: number;
+        };
+        GetAnalyticsUsersOutputBody: {
+            /** Format: int64 */
+            total_count: number;
+            users: components["schemas"]["UserSummaryResponse"][] | null;
+        };
         GetCrawlMapOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/GetCrawlMapOutputBody.json
-             */
-            readonly $schema?: string;
             /**
              * Format: int64
              * @description Number of successfully completed pages
@@ -1378,23 +1336,24 @@ export interface components {
              */
             total: number;
         };
+        GetErrorsOutputBody: {
+            by_category: components["schemas"]["ErrorCategoryResponse"][] | null;
+            by_provider: components["schemas"]["ProviderErrorResponse"][] | null;
+            top_failing_urls: components["schemas"]["FailingURLResponse"][] | null;
+        };
         GetFallbackChainOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/GetFallbackChainOutputBody.json
-             */
-            readonly $schema?: string;
             chain: components["schemas"]["FallbackChainEntryResponse"][] | null;
             tiers: string[] | null;
         };
+        GetJobDebugCaptureOutputBody: {
+            /** @description Captured LLM requests */
+            captures: components["schemas"]["DebugCaptureEntry"][] | null;
+            /** @description Whether debug capture was enabled for this job */
+            enabled: boolean;
+            /** @description Job ID */
+            job_id: string;
+        };
         GetJobResultsDownloadOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/GetJobResultsDownloadOutputBody.json
-             */
-            readonly $schema?: string;
             /** @description Presigned URL to download results (valid for 1 hour) */
             download_url: string;
             /** @description URL expiration time */
@@ -1403,24 +1362,15 @@ export interface components {
             job_id: string;
         };
         GetJobWebhookDeliveriesOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/GetJobWebhookDeliveriesOutputBody.json
-             */
-            readonly $schema?: string;
             /** @description Webhook deliveries for this job */
             deliveries: components["schemas"]["JobWebhookDeliveryResponse"][] | null;
             /** @description Job ID */
             job_id: string;
         };
+        GetTrendsOutputBody: {
+            trends: components["schemas"]["TrendPointResponse"][] | null;
+        };
         GetUsageOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/GetUsageOutputBody.json
-             */
-            readonly $schema?: string;
             /**
              * Format: int64
              * @description Jobs using user's own API keys (not charged)
@@ -1438,21 +1388,9 @@ export interface components {
             total_jobs: number;
         };
         GetUserFallbackChainOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/GetUserFallbackChainOutputBody.json
-             */
-            readonly $schema?: string;
             chain: components["schemas"]["UserFallbackChainEntryResponse"][] | null;
         };
         HealthCheckOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/HealthCheckOutputBody.json
-             */
-            readonly $schema?: string;
             status: string;
             version: string;
         };
@@ -1469,13 +1407,48 @@ export interface components {
              */
             url: string;
         };
-        JobResponse: {
+        JobCleanerConfigInput: {
+            /** @description Cleaner name (noop, markdown, trafilatura, readability) */
+            name: string;
+            /** @description Cleaner-specific options */
+            options?: components["schemas"]["JobCleanerOptionsInput"];
+        };
+        JobCleanerOptionsInput: {
+            /** @description Base URL for resolving relative links (readability) */
+            base_url?: string;
             /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/JobResponse.json
+             * @description Include images in output (trafilatura)
+             * @default true
              */
-            readonly $schema?: string;
+            images: boolean;
+            /** @description CSS selectors for elements to always keep (refyne) */
+            keep_selectors?: string[] | null;
+            /**
+             * @description Include links in output (trafilatura)
+             * @default true
+             */
+            links: boolean;
+            /**
+             * @description Output format for trafilatura/readability
+             * @default html
+             * @enum {string}
+             */
+            output: "html" | "text";
+            /**
+             * @description Refyne preset: default, minimal, or aggressive
+             * @enum {string}
+             */
+            preset?: "default" | "minimal" | "aggressive";
+            /** @description CSS selectors for elements to remove (refyne) */
+            remove_selectors?: string[] | null;
+            /**
+             * @description Include tables in output (trafilatura)
+             * @default true
+             */
+            tables: boolean;
+        };
+        JobResponse: {
+            capture_debug: boolean;
             completed_at?: string;
             /** Format: double */
             cost_usd: number;
@@ -1548,125 +1521,55 @@ export interface components {
             provider?: "anthropic" | "openai" | "openrouter" | "ollama" | "credits";
         };
         ListAllSchemasOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/ListAllSchemasOutputBody.json
-             */
-            readonly $schema?: string;
             /** @description List of all schemas */
             schemas: components["schemas"]["SchemaOutput"][] | null;
         };
+        ListCleanersOutputBody: {
+            /** @description List of available cleaners */
+            cleaners: components["schemas"]["CleanerResponse"][] | null;
+            /** @description Default cleaner chain for analysis operations */
+            default_analysis_chain: components["schemas"]["CleanerChainItemResponse"][] | null;
+            /** @description Default cleaner chain for extraction operations */
+            default_extraction_chain: components["schemas"]["CleanerChainItemResponse"][] | null;
+        };
         ListJobsOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/ListJobsOutputBody.json
-             */
-            readonly $schema?: string;
             jobs: components["schemas"]["JobResponse"][] | null;
         };
         ListKeysOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/ListKeysOutputBody.json
-             */
-            readonly $schema?: string;
             keys: components["schemas"]["APIKeyResponse"][] | null;
         };
         ListModelsOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/ListModelsOutputBody.json
-             */
-            readonly $schema?: string;
             models: components["schemas"]["ProviderModelResponse"][] | null;
         };
         ListProvidersOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/ListProvidersOutputBody.json
-             */
-            readonly $schema?: string;
             providers: components["schemas"]["ProviderInfo"][] | null;
         };
         ListSavedSitesOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/ListSavedSitesOutputBody.json
-             */
-            readonly $schema?: string;
             /** @description List of saved sites */
             sites: components["schemas"]["SavedSiteOutput"][] | null;
         };
         ListSchemasOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/ListSchemasOutputBody.json
-             */
-            readonly $schema?: string;
             /** @description List of schemas */
             schemas: components["schemas"]["SchemaOutput"][] | null;
         };
         ListServiceKeysOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/ListServiceKeysOutputBody.json
-             */
-            readonly $schema?: string;
             keys: components["schemas"]["ServiceKeyResponse"][] | null;
         };
         ListTierLimitsOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/ListTierLimitsOutputBody.json
-             */
-            readonly $schema?: string;
             /** @description List of visible tiers and their limits */
             tiers: components["schemas"]["TierLimitsResponse"][] | null;
         };
         ListTiersOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/ListTiersOutputBody.json
-             */
-            readonly $schema?: string;
             tiers: components["schemas"]["SubscriptionTierResponse"][] | null;
         };
         ListUserServiceKeysOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/ListUserServiceKeysOutputBody.json
-             */
-            readonly $schema?: string;
             keys: components["schemas"]["UserServiceKeyResponse"][] | null;
         };
         ListWebhookDeliveriesOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/ListWebhookDeliveriesOutputBody.json
-             */
-            readonly $schema?: string;
             /** @description List of webhook deliveries */
             deliveries: components["schemas"]["WebhookDeliveryResponse"][] | null;
         };
         ListWebhooksOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/ListWebhooksOutputBody.json
-             */
-            readonly $schema?: string;
             /** @description List of user's webhooks */
             webhooks: components["schemas"]["WebhookResponse"][] | null;
         };
@@ -1702,6 +1605,64 @@ export interface components {
             provider: string;
             status: string;
         };
+        OverviewResponse: {
+            /**
+             * Format: int64
+             * @description Number of unique users with jobs
+             */
+            active_users: number;
+            /**
+             * Format: int64
+             * @description Jobs using user API keys
+             */
+            byok_jobs: number;
+            /**
+             * Format: int64
+             * @description Number of completed jobs
+             */
+            completed_jobs: number;
+            /**
+             * Format: double
+             * @description Error rate percentage
+             */
+            error_rate: number;
+            /**
+             * Format: int64
+             * @description Number of failed jobs
+             */
+            failed_jobs: number;
+            /**
+             * Format: int64
+             * @description Jobs using platform API keys
+             */
+            platform_jobs: number;
+            /**
+             * Format: double
+             * @description Total cost in USD
+             */
+            total_cost_usd: number;
+            /**
+             * Format: int64
+             * @description Total number of jobs
+             */
+            total_jobs: number;
+            /**
+             * Format: int64
+             * @description Total input tokens
+             */
+            total_tokens_input: number;
+            /**
+             * Format: int64
+             * @description Total output tokens
+             */
+            total_tokens_output: number;
+        };
+        ProviderErrorResponse: {
+            /** Format: int64 */
+            count: number;
+            model: string;
+            provider: string;
+        };
         ProviderInfo: {
             base_url_hint?: string;
             description: string;
@@ -1725,15 +1686,14 @@ export interface components {
             status: string;
         };
         RevokeKeyOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/RevokeKeyOutputBody.json
-             */
-            readonly $schema?: string;
             success: boolean;
         };
         SSECompleteEvent: {
+            /**
+             * Format: double
+             * @description Total cost in USD
+             */
+            cost_usd?: number;
             /** @description Error category if job failed */
             error_category?: string;
             /** @description Error message if job failed */
@@ -1745,6 +1705,8 @@ export interface components {
              * @description Total pages processed
              */
             page_count: number;
+            /** @description URL to fetch full results */
+            results_url: string;
             /** @description Final job status */
             status: string;
         };
@@ -1753,8 +1715,6 @@ export interface components {
             message: string;
         };
         SSEResultEvent: {
-            /** @description Extracted data matching the schema */
-            data?: unknown;
             /** @description Error category if failed */
             error_category?: string;
             /** @description Error message if failed */
@@ -1787,12 +1747,6 @@ export interface components {
             urls_queued: number;
         };
         SavedSiteOutput: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/SavedSiteOutput.json
-             */
-            readonly $schema?: string;
             /** @description Analysis result */
             analysis_result?: components["schemas"]["AnalysisResultOutput"];
             /** @description Saved crawl options */
@@ -1819,12 +1773,6 @@ export interface components {
             user_id: string;
         };
         SchemaOutput: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/SchemaOutput.json
-             */
-            readonly $schema?: string;
             /** @description Schema category */
             category?: string;
             /** @description Creation timestamp */
@@ -1856,12 +1804,6 @@ export interface components {
             visibility: string;
         };
         ServiceKeyInput: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/ServiceKeyInput.json
-             */
-            readonly $schema?: string;
             /** @description API key for the provider */
             api_key: string;
             /** @description Default model to use */
@@ -1875,12 +1817,6 @@ export interface components {
             provider: "openrouter" | "anthropic" | "openai";
         };
         ServiceKeyResponse: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/ServiceKeyResponse.json
-             */
-            readonly $schema?: string;
             created_at: string;
             default_model: string;
             has_key: boolean;
@@ -1889,43 +1825,19 @@ export interface components {
             updated_at: string;
         };
         SetFallbackChainInputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/SetFallbackChainInputBody.json
-             */
-            readonly $schema?: string;
             /** @description Ordered list of provider:model pairs */
             chain: components["schemas"]["FallbackChainEntryInput"][] | null;
             /** @description Tier to set chain for (null for default chain) */
             tier?: string;
         };
         SetFallbackChainOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/SetFallbackChainOutputBody.json
-             */
-            readonly $schema?: string;
             chain: components["schemas"]["FallbackChainEntryResponse"][] | null;
         };
         SetUserFallbackChainInputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/SetUserFallbackChainInputBody.json
-             */
-            readonly $schema?: string;
             /** @description Ordered list of provider:model pairs */
             chain: components["schemas"]["UserFallbackChainEntryInput"][] | null;
         };
         SetUserFallbackChainOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/SetUserFallbackChainOutputBody.json
-             */
-            readonly $schema?: string;
             chain: components["schemas"]["UserFallbackChainEntryResponse"][] | null;
         };
         SubscriptionTierResponse: {
@@ -1936,12 +1848,6 @@ export interface components {
             slug: string;
         };
         SyncTiersOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/SyncTiersOutputBody.json
-             */
-            readonly $schema?: string;
             /** @description Sync result message */
             message: string;
         };
@@ -2005,13 +1911,18 @@ export interface components {
              */
             output: number;
         };
+        TrendPointResponse: {
+            /** Format: double */
+            cost_usd: number;
+            date: string;
+            /** Format: int64 */
+            error_count: number;
+            /** Format: int64 */
+            job_count: number;
+            /** Format: int64 */
+            tokens: number;
+        };
         UpdateSavedSiteInputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/UpdateSavedSiteInputBody.json
-             */
-            readonly $schema?: string;
             /** @description Analysis result to update */
             analysis_result?: components["schemas"]["AnalysisResultInput"];
             /** @description Crawl options */
@@ -2029,12 +1940,6 @@ export interface components {
             url?: string;
         };
         UpdateSchemaInputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/UpdateSchemaInputBody.json
-             */
-            readonly $schema?: string;
             /** @description Schema category */
             category?: string;
             /** @description Schema description */
@@ -2111,12 +2016,6 @@ export interface components {
             updated_at: string;
         };
         UserListModelsOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/UserListModelsOutputBody.json
-             */
-            readonly $schema?: string;
             models: components["schemas"]["UserModelResponse"][] | null;
         };
         UserModelResponse: {
@@ -2128,12 +2027,6 @@ export interface components {
             name: string;
         };
         UserServiceKeyInput: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/UserServiceKeyInput.json
-             */
-            readonly $schema?: string;
             /** @description API key for the provider (leave empty to keep existing) */
             api_key?: string;
             /** @description Base URL for the provider (for Ollama or custom endpoints) */
@@ -2147,12 +2040,6 @@ export interface components {
             provider: "openrouter" | "anthropic" | "openai" | "ollama";
         };
         UserServiceKeyResponse: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/UserServiceKeyResponse.json
-             */
-            readonly $schema?: string;
             base_url?: string;
             created_at: string;
             has_key: boolean;
@@ -2161,42 +2048,32 @@ export interface components {
             provider: string;
             updated_at: string;
         };
+        UserSummaryResponse: {
+            /** Format: int64 */
+            completed_jobs: number;
+            /** Format: int64 */
+            failed_jobs: number;
+            last_active?: string;
+            /** Format: double */
+            total_cost_usd: number;
+            /** Format: int64 */
+            total_jobs: number;
+            /** Format: int64 */
+            total_tokens: number;
+            user_id: string;
+        };
         ValidateModelsInputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/ValidateModelsInputBody.json
-             */
-            readonly $schema?: string;
             /** @description Models to validate */
             models: components["schemas"]["ModelValidationRequest"][] | null;
         };
         ValidateModelsOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/ValidateModelsOutputBody.json
-             */
-            readonly $schema?: string;
             results: components["schemas"]["ModelValidationResponse"][] | null;
         };
         ValidateTiersInputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/ValidateTiersInputBody.json
-             */
-            readonly $schema?: string;
             /** @description Tiers to validate */
             tiers: components["schemas"]["TierValidationRequest"][] | null;
         };
         ValidateTiersOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/ValidateTiersOutputBody.json
-             */
-            readonly $schema?: string;
             results: components["schemas"]["TierValidationResponse"][] | null;
         };
         WebhookDeliveryResponse: {
@@ -2248,12 +2125,6 @@ export interface components {
             value: string;
         };
         WebhookInput: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/WebhookInput.json
-             */
-            readonly $schema?: string;
             /** @description Event types to subscribe to (empty or ["*"] for all events) */
             events?: string[] | null;
             /** @description Custom headers to include in webhook requests */
@@ -2271,12 +2142,6 @@ export interface components {
             url: string;
         };
         WebhookResponse: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8080/schemas/WebhookResponse.json
-             */
-            readonly $schema?: string;
             /** @description Creation timestamp */
             created_at: string;
             /** @description Subscribed event types */
@@ -2305,383 +2170,6 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    adminGetFallbackChain: {
-        parameters: {
-            query?: {
-                /** @description Tier to get chain for (empty for all, 'default' for default chain) */
-                tier?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GetFallbackChainOutputBody"];
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    adminSetFallbackChain: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SetFallbackChainInputBody"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SetFallbackChainOutputBody"];
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    adminValidateModels: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ValidateModelsInputBody"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ValidateModelsOutputBody"];
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    adminListModels: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Provider to list models for */
-                provider: "openrouter" | "anthropic" | "openai" | "ollama";
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ListModelsOutputBody"];
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    adminListSchemas: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ListAllSchemasOutputBody"];
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    adminCreatePlatformSchema: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreatePlatformSchemaInputBody"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SchemaOutput"];
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    adminListServiceKeys: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ListServiceKeysOutputBody"];
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    adminUpsertServiceKey: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ServiceKeyInput"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ServiceKeyResponse"];
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    adminDeleteServiceKey: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Provider to delete */
-                provider: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DeleteServiceKeyOutputBody"];
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    adminListTiers: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ListTiersOutputBody"];
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    adminSyncTiers: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SyncTiersOutputBody"];
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    adminValidateTiers: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ValidateTiersInputBody"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ValidateTiersOutputBody"];
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
     analyze: {
         parameters: {
             query?: never;
@@ -2702,6 +2190,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AnalyzeResponseBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    listCleaners: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListCleanersOutputBody"];
                 };
             };
             /** @description Error */
@@ -2913,6 +2430,38 @@ export interface operations {
             };
         };
     };
+    getJobDebugCapture: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Job ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetJobDebugCaptureOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     downloadJobResults: {
         parameters: {
             query?: never;
@@ -2951,7 +2500,7 @@ export interface operations {
                 /** @description Merge all page results into single array */
                 merge?: boolean;
                 /** @description Output format override */
-                format?: "json" | "jsonl" | "csv";
+                format?: "json" | "jsonl" | "yaml";
             };
             header?: never;
             path: {
@@ -2979,7 +2528,7 @@ export interface operations {
                         url?: string;
                     }[];
                     "application/x-ndjson": string;
-                    "text/csv": string;
+                    "application/yaml": string;
                 };
             };
             /** @description Unauthorized - missing or invalid token */
@@ -3017,28 +2566,6 @@ export interface operations {
                 };
                 content: {
                     "text/event-stream": ({
-                        data: components["schemas"]["SSEStatusEvent"];
-                        /**
-                         * @description The event name.
-                         * @constant
-                         */
-                        event: "status";
-                        /** @description The event ID. */
-                        id?: number;
-                        /** @description The retry time in milliseconds. */
-                        retry?: number;
-                    } | {
-                        data: components["schemas"]["SSEResultEvent"];
-                        /**
-                         * @description The event name.
-                         * @constant
-                         */
-                        event: "result";
-                        /** @description The event ID. */
-                        id?: number;
-                        /** @description The retry time in milliseconds. */
-                        retry?: number;
-                    } | {
                         data: components["schemas"]["SSECompleteEvent"];
                         /**
                          * @description The event name.
@@ -3056,6 +2583,28 @@ export interface operations {
                          * @constant
                          */
                         event: "error";
+                        /** @description The event ID. */
+                        id?: number;
+                        /** @description The retry time in milliseconds. */
+                        retry?: number;
+                    } | {
+                        data: components["schemas"]["SSEResultEvent"];
+                        /**
+                         * @description The event name.
+                         * @constant
+                         */
+                        event: "result";
+                        /** @description The event ID. */
+                        id?: number;
+                        /** @description The retry time in milliseconds. */
+                        retry?: number;
+                    } | {
+                        data: components["schemas"]["SSEStatusEvent"];
+                        /**
+                         * @description The event name.
+                         * @constant
+                         */
+                        event: "status";
                         /** @description The event ID. */
                         id?: number;
                         /** @description The retry time in milliseconds. */
