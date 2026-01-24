@@ -1,0 +1,137 @@
+version: '3'
+
+vars:
+  OPENAPI_SPEC_URL: '{{.OPENAPI_SPEC_URL | default "http://localhost:8080/openapi.json"}}'
+  OPENAPI_PROD_URL: https://api.refyne.uk/openapi.json
+
+tasks:
+  # ============================================
+  # Dependencies
+  # ============================================
+  deps:
+    desc: Install npm dependencies
+    cmds:
+      - npm install
+
+  deps:update:
+    desc: Update dependencies within semver ranges (safe)
+    cmds:
+      - npm update
+
+  deps:upgrade:
+    desc: Upgrade dependencies to latest versions
+    cmds:
+      - npx npm-check-updates -u
+      - npm install
+
+  # ============================================
+  # Code generation
+  # ============================================
+  generate:
+    desc: Generate TypeScript types from OpenAPI spec (local server by default)
+    env:
+      OPENAPI_SPEC_URL: '{{.OPENAPI_SPEC_URL}}'
+    cmds:
+      - echo "Generating types from {{.OPENAPI_SPEC_URL}}..."
+      - npm run generate
+      - echo "Done."
+
+  generate:prod:
+    desc: Generate types from production API
+    env:
+      OPENAPI_SPEC_URL: '{{.OPENAPI_PROD_URL}}'
+    cmds:
+      - echo "Generating types from {{.OPENAPI_PROD_URL}}..."
+      - npm run generate
+      - echo "Done."
+
+  # ============================================
+  # Building
+  # ============================================
+  build:
+    desc: Build the package
+    cmds:
+      - npm run build
+
+  dev:
+    desc: Build in watch mode
+    cmds:
+      - npm run dev
+
+  # ============================================
+  # Testing
+  # ============================================
+  test:
+    desc: Run tests
+    cmds:
+      - npm test
+
+  test:watch:
+    desc: Run tests in watch mode
+    cmds:
+      - npm run test:watch
+
+  test:coverage:
+    desc: Run tests with coverage
+    cmds:
+      - npm test -- --coverage
+
+  # ============================================
+  # Linting & Formatting
+  # ============================================
+  lint:
+    desc: Run linter
+    cmds:
+      - npm run lint
+
+  lint:fix:
+    desc: Run linter with auto-fix
+    cmds:
+      - npm run lint -- --fix
+
+  typecheck:
+    desc: Run TypeScript type checking
+    cmds:
+      - npm run typecheck
+
+  # ============================================
+  # Documentation
+  # ============================================
+  docs:
+    desc: Generate API documentation
+    cmds:
+      - npm run docs
+
+  # ============================================
+  # Combined tasks
+  # ============================================
+  check:
+    desc: Run all checks (lint, typecheck, test)
+    cmds:
+      - task: lint
+      - task: typecheck
+      - task: test
+
+  all:
+    desc: Run all checks and build
+    cmds:
+      - task: check
+      - task: build
+
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - npm run clean
+
+  # ============================================
+  # Publishing
+  # ============================================
+  publish:dry:
+    desc: Dry-run publish to npm
+    cmds:
+      - npm publish --dry-run
+
+  publish:
+    desc: Publish to npm
+    cmds:
+      - npm publish --access public
