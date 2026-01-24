@@ -44,6 +44,8 @@ export interface RefyneConfig {
   cacheEnabled?: boolean;
   /** Custom User-Agent suffix (e.g., "MyApp/1.0") */
   userAgentSuffix?: string;
+  /** Referer header for API key validation (required for demo/partner keys) */
+  referer?: string;
 }
 
 export const DEFAULT_BASE_URL = 'https://api.refyne.uk';
@@ -399,7 +401,7 @@ export class Refyne {
   static Builder = RefyneBuilder;
 
   private readonly httpClient: ReturnType<typeof createClient<paths>>;
-  private readonly config: Required<Omit<RefyneConfig, 'userAgentSuffix'>> & { userAgentSuffix?: string };
+  private readonly config: Required<Omit<RefyneConfig, 'userAgentSuffix' | 'referer'>> & { userAgentSuffix?: string; referer?: string };
   private readonly logger: Logger;
   private apiVersionChecked = false;
 
@@ -424,18 +426,28 @@ export class Refyne {
       cache: config.cache || new MemoryCache(),
       cacheEnabled: config.cacheEnabled !== false,
       userAgentSuffix: config.userAgentSuffix,
+      referer: config.referer,
     };
 
     this.logger = this.config.logger;
 
+    // Build headers - include Referer if provided (required for demo/partner keys)
+    const headers: Record<string, string> = {
+      'Authorization': `Bearer ${this.config.apiKey}`,
+      'User-Agent': buildUserAgent(this.config.userAgentSuffix),
+      'X-SDK-Version': SDK_VERSION,
+    };
+    if (this.config.referer) {
+      // Set both Referer and X-Referer headers
+      // X-Referer is a fallback for environments that strip Referer (e.g., Cloudflare Workers)
+      headers['Referer'] = this.config.referer;
+      headers['X-Referer'] = this.config.referer;
+    }
+
     // Create openapi-fetch client with middleware
     this.httpClient = createClient<paths>({
       baseUrl: this.config.baseUrl,
-      headers: {
-        'Authorization': `Bearer ${this.config.apiKey}`,
-        'User-Agent': buildUserAgent(this.config.userAgentSuffix),
-        'X-SDK-Version': SDK_VERSION,
-      },
+      headers,
     });
 
     // Add middleware for error handling and API version checking

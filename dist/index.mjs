@@ -605,6 +605,7 @@ var Refyne = class {
     };
     if (this.config.referer) {
       headers["Referer"] = this.config.referer;
+      headers["X-Referer"] = this.config.referer;
     }
     this.httpClient = createClient({
       baseUrl: this.config.baseUrl,
