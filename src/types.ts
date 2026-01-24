@@ -691,13 +691,19 @@ export interface components {
             type: string;
         };
         CleanerOptionsInput: {
-            /** @description Base URL for resolving relative links (readability) */
+            /** @description Base URL for resolving relative links (readability, refyne) */
             base_url?: string;
+            /** @description Extract heading structure to frontmatter (refyne markdown) */
+            extract_headings?: boolean;
+            /** @description Extract images to frontmatter with {{IMG_001}} placeholders (refyne markdown) */
+            extract_images?: boolean;
             /**
              * @description Include images in output (trafilatura)
              * @default true
              */
             images: boolean;
+            /** @description Prepend YAML frontmatter with metadata (refyne markdown output) */
+            include_frontmatter?: boolean;
             /** @description CSS selectors for elements to always keep (refyne) */
             keep_selectors?: string[] | null;
             /**
@@ -706,11 +712,11 @@ export interface components {
              */
             links: boolean;
             /**
-             * @description Output format for trafilatura/readability
+             * @description Output format (trafilatura, readability, refyne)
              * @default html
              * @enum {string}
              */
-            output: "html" | "text";
+            output: "html" | "text" | "markdown";
             /**
              * @description Refyne preset: default, minimal, or aggressive
              * @enum {string}
@@ -718,6 +724,8 @@ export interface components {
             preset?: "default" | "minimal" | "aggressive";
             /** @description CSS selectors for elements to remove (refyne) */
             remove_selectors?: string[] | null;
+            /** @description Resolve relative URLs to absolute using base_url (refyne) */
+            resolve_urls?: boolean;
             /**
              * @description Include tables in output (trafilatura)
              * @default true
@@ -1414,13 +1422,19 @@ export interface components {
             options?: components["schemas"]["JobCleanerOptionsInput"];
         };
         JobCleanerOptionsInput: {
-            /** @description Base URL for resolving relative links (readability) */
+            /** @description Base URL for resolving relative links (readability, refyne) */
             base_url?: string;
+            /** @description Extract heading structure to frontmatter (refyne markdown) */
+            extract_headings?: boolean;
+            /** @description Extract images to frontmatter with {{IMG_001}} placeholders (refyne markdown) */
+            extract_images?: boolean;
             /**
              * @description Include images in output (trafilatura)
              * @default true
              */
             images: boolean;
+            /** @description Prepend YAML frontmatter with metadata (refyne markdown output) */
+            include_frontmatter?: boolean;
             /** @description CSS selectors for elements to always keep (refyne) */
             keep_selectors?: string[] | null;
             /**
@@ -1429,11 +1443,11 @@ export interface components {
              */
             links: boolean;
             /**
-             * @description Output format for trafilatura/readability
+             * @description Output format (trafilatura, readability, refyne)
              * @default html
              * @enum {string}
              */
-            output: "html" | "text";
+            output: "html" | "text" | "markdown";
             /**
              * @description Refyne preset: default, minimal, or aggressive
              * @enum {string}
@@ -1441,6 +1455,8 @@ export interface components {
             preset?: "default" | "minimal" | "aggressive";
             /** @description CSS selectors for elements to remove (refyne) */
             remove_selectors?: string[] | null;
+            /** @description Resolve relative URLs to absolute using base_url (refyne) */
+            resolve_urls?: boolean;
             /**
              * @description Include tables in output (trafilatura)
              * @default true
