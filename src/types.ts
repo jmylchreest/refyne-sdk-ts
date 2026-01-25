@@ -675,7 +675,7 @@ export interface components {
             name: string;
         };
         CleanerConfigInput: {
-            /** @description Cleaner name (noop, markdown, trafilatura, readability) */
+            /** @description Cleaner name (noop, refyne) */
             name: string;
             /** @description Cleaner-specific options */
             options?: components["schemas"]["CleanerOptionsInput"];
@@ -691,46 +691,31 @@ export interface components {
             type: string;
         };
         CleanerOptionsInput: {
-            /** @description Base URL for resolving relative links (readability, refyne) */
+            /** @description Base URL for resolving relative links */
             base_url?: string;
-            /** @description Extract heading structure to frontmatter (refyne markdown) */
+            /** @description Extract heading structure to frontmatter (markdown) */
             extract_headings?: boolean;
-            /** @description Extract images to frontmatter with {{IMG_001}} placeholders (refyne markdown) */
+            /** @description Extract images to frontmatter with {{IMG_001}} placeholders (markdown) */
             extract_images?: boolean;
-            /**
-             * @description Include images in output (trafilatura)
-             * @default true
-             */
-            images: boolean;
-            /** @description Prepend YAML frontmatter with metadata (refyne markdown output) */
+            /** @description Prepend YAML frontmatter with metadata (markdown output) */
             include_frontmatter?: boolean;
-            /** @description CSS selectors for elements to always keep (refyne) */
+            /** @description CSS selectors for elements to always keep */
             keep_selectors?: string[] | null;
             /**
-             * @description Include links in output (trafilatura)
-             * @default true
-             */
-            links: boolean;
-            /**
-             * @description Output format (trafilatura, readability, refyne)
+             * @description Output format: html, text, or markdown
              * @default html
              * @enum {string}
              */
             output: "html" | "text" | "markdown";
             /**
-             * @description Refyne preset: default, minimal, or aggressive
+             * @description Preset: default, minimal, or aggressive
              * @enum {string}
              */
             preset?: "default" | "minimal" | "aggressive";
-            /** @description CSS selectors for elements to remove (refyne) */
+            /** @description CSS selectors for elements to remove */
             remove_selectors?: string[] | null;
-            /** @description Resolve relative URLs to absolute using base_url (refyne) */
+            /** @description Resolve relative URLs to absolute using base_url */
             resolve_urls?: boolean;
-            /**
-             * @description Include tables in output (trafilatura)
-             * @default true
-             */
-            tables: boolean;
         };
         CleanerResponse: {
             /** @description Description of what this cleaner does */
@@ -1416,52 +1401,61 @@ export interface components {
             url: string;
         };
         JobCleanerConfigInput: {
-            /** @description Cleaner name (noop, markdown, trafilatura, readability) */
+            /** @description Cleaner name (noop, refyne) */
             name: string;
             /** @description Cleaner-specific options */
             options?: components["schemas"]["JobCleanerOptionsInput"];
         };
         JobCleanerOptionsInput: {
-            /** @description Base URL for resolving relative links (readability, refyne) */
+            /** @description Base URL for resolving relative links */
             base_url?: string;
-            /** @description Extract heading structure to frontmatter (refyne markdown) */
+            /** @description Extract heading structure to frontmatter (markdown) */
             extract_headings?: boolean;
-            /** @description Extract images to frontmatter with {{IMG_001}} placeholders (refyne markdown) */
+            /** @description Extract images to frontmatter with {{IMG_001}} placeholders (markdown) */
             extract_images?: boolean;
-            /**
-             * @description Include images in output (trafilatura)
-             * @default true
-             */
-            images: boolean;
-            /** @description Prepend YAML frontmatter with metadata (refyne markdown output) */
+            /** @description Prepend YAML frontmatter with metadata (markdown output) */
             include_frontmatter?: boolean;
-            /** @description CSS selectors for elements to always keep (refyne) */
+            /** @description CSS selectors for elements to always keep */
             keep_selectors?: string[] | null;
             /**
-             * @description Include links in output (trafilatura)
-             * @default true
-             */
-            links: boolean;
-            /**
-             * @description Output format (trafilatura, readability, refyne)
+             * @description Output format: html, text, or markdown
              * @default html
              * @enum {string}
              */
             output: "html" | "text" | "markdown";
             /**
-             * @description Refyne preset: default, minimal, or aggressive
+             * @description Preset: default, minimal, or aggressive
              * @enum {string}
              */
             preset?: "default" | "minimal" | "aggressive";
-            /** @description CSS selectors for elements to remove (refyne) */
+            /** @description CSS selectors for elements to remove */
             remove_selectors?: string[] | null;
-            /** @description Resolve relative URLs to absolute using base_url (refyne) */
+            /** @description Resolve relative URLs to absolute using base_url */
             resolve_urls?: boolean;
+        };
+        JobQueueStats: {
+            /** @description Pending jobs by tier */
+            pending_by_tier: {
+                [key: string]: number;
+            };
             /**
-             * @description Include tables in output (trafilatura)
-             * @default true
+             * Format: int64
+             * @description Total pending jobs
              */
-            tables: boolean;
+            pending_total: number;
+            /** @description Running jobs by tier */
+            running_by_tier: {
+                [key: string]: number;
+            };
+            /** @description Running jobs by user ID */
+            running_by_user: {
+                [key: string]: number;
+            };
+            /**
+             * Format: int64
+             * @description Total running jobs
+             */
+            running_total: number;
         };
         JobResponse: {
             capture_debug: boolean;
@@ -1697,6 +1691,18 @@ export interface components {
             is_free: boolean;
             name: string;
         };
+        RateLimitStats: {
+            /**
+             * Format: int64
+             * @description Number of currently suspended API keys
+             */
+            active_suspensions: number;
+            /**
+             * Format: int64
+             * @description Total rate limit entries in database
+             */
+            total_entries: number;
+        };
         ReadyzOutputBody: {
             /** @description Readiness status */
             status: string;
@@ -1866,6 +1872,12 @@ export interface components {
         SyncTiersOutputBody: {
             /** @description Sync result message */
             message: string;
+        };
+        SystemMetrics: {
+            /** @description Job queue statistics */
+            job_queue: components["schemas"]["JobQueueStats"];
+            /** @description API key rate limit statistics */
+            rate_limits: components["schemas"]["RateLimitStats"];
         };
         TierLimitsResponse: {
             /**
