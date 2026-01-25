@@ -173,6 +173,33 @@ export class JobsClient {
     if (error) throw error;
     return data;
   }
+
+  /** Get the crawl map for a job. */
+  async getCrawlMap(id: string) {
+    const { data, error } = await this.client.GET('/api/v1/jobs/{id}/crawl-map', {
+      params: { path: { id } },
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  /** Get debug capture data for a job. */
+  async getDebugCapture(id: string) {
+    const { data, error } = await this.client.GET('/api/v1/jobs/{id}/debug-capture', {
+      params: { path: { id } },
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  /** Get webhook deliveries for a job. */
+  async getWebhookDeliveries(id: string) {
+    const { data, error } = await this.client.GET('/api/v1/jobs/{id}/webhooks', {
+      params: { path: { id } },
+    });
+    if (error) throw error;
+    return data;
+  }
 }
 
 /**
@@ -373,6 +400,66 @@ export class LLMClient {
   }
 }
 
+/**
+ * Webhooks sub-client for webhook management.
+ */
+export class WebhooksClient {
+  constructor(private readonly client: ReturnType<typeof createClient<paths>>) {}
+
+  /** List all webhooks. */
+  async list() {
+    const { data, error } = await this.client.GET('/api/v1/webhooks');
+    if (error) throw error;
+    return data;
+  }
+
+  /** Get a webhook by ID. */
+  async get(id: string) {
+    const { data, error } = await this.client.GET('/api/v1/webhooks/{id}', {
+      params: { path: { id } },
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  /** Create a new webhook. */
+  async create(input: components['schemas']['WebhookInput']) {
+    const { data, error } = await this.client.POST('/api/v1/webhooks', {
+      body: input,
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  /** Update a webhook. */
+  async update(id: string, input: components['schemas']['WebhookInput']) {
+    const { data, error } = await this.client.PUT('/api/v1/webhooks/{id}', {
+      params: { path: { id } },
+      body: input,
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  /** Delete a webhook. */
+  async delete(id: string) {
+    const { data, error } = await this.client.DELETE('/api/v1/webhooks/{id}', {
+      params: { path: { id } },
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  /** List webhook deliveries. */
+  async listDeliveries(id: string, options?: { limit?: number; offset?: number }) {
+    const { data, error } = await this.client.GET('/api/v1/webhooks/{id}/deliveries', {
+      params: { path: { id }, query: options },
+    });
+    if (error) throw error;
+    return data;
+  }
+}
+
 // =============================================================================
 // Main Client
 // =============================================================================
@@ -416,6 +503,8 @@ export class Refyne {
   readonly keys: KeysClient;
   /** Sub-client for LLM configuration */
   readonly llm: LLMClient;
+  /** Sub-client for webhook operations */
+  readonly webhooks: WebhooksClient;
 
   constructor(config: RefyneConfig) {
     this.config = {
@@ -471,6 +560,7 @@ export class Refyne {
     this.sites = new SitesClient(this.httpClient);
     this.keys = new KeysClient(this.httpClient);
     this.llm = new LLMClient(this.httpClient);
+    this.webhooks = new WebhooksClient(this.httpClient);
   }
 
   private createErrorMiddleware(): Middleware {
@@ -538,6 +628,33 @@ export class Refyne {
    */
   async getUsage(): Promise<UsageResponse> {
     const { data, error } = await this.httpClient.GET('/api/v1/usage');
+    if (error) throw error;
+    return data;
+  }
+
+  /**
+   * Check API health status.
+   */
+  async health() {
+    const { data, error } = await this.httpClient.GET('/api/v1/health');
+    if (error) throw error;
+    return data;
+  }
+
+  /**
+   * List available content cleaners.
+   */
+  async listCleaners() {
+    const { data, error } = await this.httpClient.GET('/api/v1/cleaners');
+    if (error) throw error;
+    return data;
+  }
+
+  /**
+   * Get available pricing tiers and their limits.
+   */
+  async getPricingTiers() {
+    const { data, error } = await this.httpClient.GET('/api/v1/pricing/tiers');
     if (error) throw error;
     return data;
   }

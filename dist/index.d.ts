@@ -3830,6 +3830,89 @@ declare class JobsClient {
         expires_at: string;
         job_id: string;
     }>;
+    /** Get the crawl map for a job. */
+    getCrawlMap(id: string): Promise<{
+        completed: number;
+        entries: {
+            completed_at?: string | undefined;
+            depth: number;
+            discovered_at?: string | undefined;
+            error_category?: string | undefined;
+            error_details?: string | undefined;
+            error_message?: string | undefined;
+            extract_duration_ms: number;
+            fetch_duration_ms: number;
+            id: string;
+            llm_model?: string | undefined;
+            llm_provider?: string | undefined;
+            parent_url?: string | undefined;
+            status: string;
+            token_usage_input: number;
+            token_usage_output: number;
+            url: string;
+        }[] | null;
+        error_summary?: {
+            by_category: {
+                [key: string]: number;
+            };
+            has_rate_limit: boolean;
+            total: number;
+        } | undefined;
+        failed: number;
+        job_id: string;
+        max_depth: number;
+        seed_url: string;
+        total: number;
+    }>;
+    /** Get debug capture data for a job. */
+    getDebugCapture(id: string): Promise<{
+        captures: {
+            hints_applied?: {
+                [key: string]: string;
+            } | undefined;
+            id: string;
+            job_type: string;
+            prompt?: string | undefined;
+            raw_content?: string | undefined;
+            request: {
+                content_size: number;
+                fetch_mode?: string | undefined;
+                model: string;
+                prompt_size: number;
+                provider: string;
+            };
+            response: {
+                duration_ms: number;
+                error?: string | undefined;
+                input_tokens: number;
+                output_tokens: number;
+                success: boolean;
+            };
+            schema?: string | undefined;
+            timestamp: string;
+            url: string;
+        }[] | null;
+        enabled: boolean;
+        job_id: string;
+    }>;
+    /** Get webhook deliveries for a job. */
+    getWebhookDeliveries(id: string): Promise<{
+        deliveries: {
+            attempt_number: number;
+            created_at: string;
+            delivered_at?: string | undefined;
+            error_message?: string | undefined;
+            event_type: string;
+            id: string;
+            max_attempts: number;
+            response_time_ms?: number | undefined;
+            status: string;
+            status_code?: number | undefined;
+            url: string;
+            webhook_id?: string | undefined;
+        }[] | null;
+        job_id: string;
+    }>;
 }
 /**
  * Schemas sub-client for schema management.
@@ -4040,6 +4123,101 @@ declare class LLMClient {
     }>;
 }
 /**
+ * Webhooks sub-client for webhook management.
+ */
+declare class WebhooksClient {
+    private readonly client;
+    constructor(client: ReturnType<typeof createClient__default<paths>>);
+    /** List all webhooks. */
+    list(): Promise<{
+        webhooks: {
+            created_at: string;
+            events: string[] | null;
+            has_secret: boolean;
+            headers?: {
+                name: string;
+                value: string;
+            }[] | null | undefined;
+            id: string;
+            is_active: boolean;
+            name: string;
+            updated_at: string;
+            url: string;
+        }[] | null;
+    }>;
+    /** Get a webhook by ID. */
+    get(id: string): Promise<{
+        created_at: string;
+        events: string[] | null;
+        has_secret: boolean;
+        headers?: {
+            name: string;
+            value: string;
+        }[] | null | undefined;
+        id: string;
+        is_active: boolean;
+        name: string;
+        updated_at: string;
+        url: string;
+    }>;
+    /** Create a new webhook. */
+    create(input: components['schemas']['WebhookInput']): Promise<{
+        created_at: string;
+        events: string[] | null;
+        has_secret: boolean;
+        headers?: {
+            name: string;
+            value: string;
+        }[] | null | undefined;
+        id: string;
+        is_active: boolean;
+        name: string;
+        updated_at: string;
+        url: string;
+    }>;
+    /** Update a webhook. */
+    update(id: string, input: components['schemas']['WebhookInput']): Promise<{
+        created_at: string;
+        events: string[] | null;
+        has_secret: boolean;
+        headers?: {
+            name: string;
+            value: string;
+        }[] | null | undefined;
+        id: string;
+        is_active: boolean;
+        name: string;
+        updated_at: string;
+        url: string;
+    }>;
+    /** Delete a webhook. */
+    delete(id: string): Promise<{
+        success: boolean;
+    }>;
+    /** List webhook deliveries. */
+    listDeliveries(id: string, options?: {
+        limit?: number;
+        offset?: number;
+    }): Promise<{
+        deliveries: {
+            attempt_number: number;
+            created_at: string;
+            delivered_at?: string | undefined;
+            error_message?: string | undefined;
+            event_type: string;
+            id: string;
+            job_id: string;
+            max_attempts: number;
+            next_retry_at?: string | undefined;
+            response_time_ms?: number | undefined;
+            status: string;
+            status_code?: number | undefined;
+            url: string;
+            webhook_id?: string | undefined;
+        }[] | null;
+    }>;
+}
+/**
  * Refyne API client.
  *
  * Provides type-safe access to the Refyne API.
@@ -4076,6 +4254,8 @@ declare class Refyne {
     readonly keys: KeysClient;
     /** Sub-client for LLM configuration */
     readonly llm: LLMClient;
+    /** Sub-client for webhook operations */
+    readonly webhooks: WebhooksClient;
     constructor(config: RefyneConfig);
     private createErrorMiddleware;
     /**
@@ -4094,6 +4274,49 @@ declare class Refyne {
      * Get usage statistics for the current billing period.
      */
     getUsage(): Promise<UsageResponse>;
+    /**
+     * Check API health status.
+     */
+    health(): Promise<{
+        status: string;
+        version: string;
+    }>;
+    /**
+     * List available content cleaners.
+     */
+    listCleaners(): Promise<{
+        cleaners: {
+            description: string;
+            name: string;
+            options?: {
+                default: unknown;
+                description: string;
+                name: string;
+                type: string;
+            }[] | null | undefined;
+        }[] | null;
+        default_analysis_chain: {
+            name: string;
+        }[] | null;
+        default_extraction_chain: {
+            name: string;
+        }[] | null;
+    }>;
+    /**
+     * Get available pricing tiers and their limits.
+     */
+    getPricingTiers(): Promise<{
+        tiers: {
+            credit_allocation_usd: number;
+            credit_rollover_months: number;
+            display_name: string;
+            max_concurrent_jobs: number;
+            max_pages_per_crawl: number;
+            monthly_extractions: number;
+            name: string;
+            requests_per_minute: number;
+        }[] | null;
+    }>;
     /**
      * Get the raw openapi-fetch client for advanced usage.
      */

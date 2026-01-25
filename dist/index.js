@@ -585,6 +585,30 @@ var JobsClient = class {
     if (error) throw error;
     return data;
   }
+  /** Get the crawl map for a job. */
+  async getCrawlMap(id) {
+    const { data, error } = await this.client.GET("/api/v1/jobs/{id}/crawl-map", {
+      params: { path: { id } }
+    });
+    if (error) throw error;
+    return data;
+  }
+  /** Get debug capture data for a job. */
+  async getDebugCapture(id) {
+    const { data, error } = await this.client.GET("/api/v1/jobs/{id}/debug-capture", {
+      params: { path: { id } }
+    });
+    if (error) throw error;
+    return data;
+  }
+  /** Get webhook deliveries for a job. */
+  async getWebhookDeliveries(id) {
+    const { data, error } = await this.client.GET("/api/v1/jobs/{id}/webhooks", {
+      params: { path: { id } }
+    });
+    if (error) throw error;
+    return data;
+  }
 };
 var SchemasClient = class {
   constructor(client) {
@@ -756,6 +780,58 @@ var LLMClient = class {
     return data;
   }
 };
+var WebhooksClient = class {
+  constructor(client) {
+    this.client = client;
+  }
+  /** List all webhooks. */
+  async list() {
+    const { data, error } = await this.client.GET("/api/v1/webhooks");
+    if (error) throw error;
+    return data;
+  }
+  /** Get a webhook by ID. */
+  async get(id) {
+    const { data, error } = await this.client.GET("/api/v1/webhooks/{id}", {
+      params: { path: { id } }
+    });
+    if (error) throw error;
+    return data;
+  }
+  /** Create a new webhook. */
+  async create(input) {
+    const { data, error } = await this.client.POST("/api/v1/webhooks", {
+      body: input
+    });
+    if (error) throw error;
+    return data;
+  }
+  /** Update a webhook. */
+  async update(id, input) {
+    const { data, error } = await this.client.PUT("/api/v1/webhooks/{id}", {
+      params: { path: { id } },
+      body: input
+    });
+    if (error) throw error;
+    return data;
+  }
+  /** Delete a webhook. */
+  async delete(id) {
+    const { data, error } = await this.client.DELETE("/api/v1/webhooks/{id}", {
+      params: { path: { id } }
+    });
+    if (error) throw error;
+    return data;
+  }
+  /** List webhook deliveries. */
+  async listDeliveries(id, options) {
+    const { data, error } = await this.client.GET("/api/v1/webhooks/{id}/deliveries", {
+      params: { path: { id }, query: options }
+    });
+    if (error) throw error;
+    return data;
+  }
+};
 var Refyne = class {
   /** Static builder for fluent construction */
   static Builder = RefyneBuilder;
@@ -773,6 +849,8 @@ var Refyne = class {
   keys;
   /** Sub-client for LLM configuration */
   llm;
+  /** Sub-client for webhook operations */
+  webhooks;
   constructor(config) {
     this.config = {
       apiKey: config.apiKey,
@@ -814,6 +892,7 @@ var Refyne = class {
     this.sites = new SitesClient(this.httpClient);
     this.keys = new KeysClient(this.httpClient);
     this.llm = new LLMClient(this.httpClient);
+    this.webhooks = new WebhooksClient(this.httpClient);
   }
   createErrorMiddleware() {
     return {
@@ -871,6 +950,30 @@ var Refyne = class {
    */
   async getUsage() {
     const { data, error } = await this.httpClient.GET("/api/v1/usage");
+    if (error) throw error;
+    return data;
+  }
+  /**
+   * Check API health status.
+   */
+  async health() {
+    const { data, error } = await this.httpClient.GET("/api/v1/health");
+    if (error) throw error;
+    return data;
+  }
+  /**
+   * List available content cleaners.
+   */
+  async listCleaners() {
+    const { data, error } = await this.httpClient.GET("/api/v1/cleaners");
+    if (error) throw error;
+    return data;
+  }
+  /**
+   * Get available pricing tiers and their limits.
+   */
+  async getPricingTiers() {
+    const { data, error } = await this.httpClient.GET("/api/v1/pricing/tiers");
     if (error) throw error;
     return data;
   }
