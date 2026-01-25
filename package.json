@@ -1,5 +1,5 @@
 {
-  "name": "@refyne/sdk",
+  "name": "refyne-sdk",
   "version": "0.1.2",
   "description": "Official TypeScript SDK for the Refyne API - LLM-powered web extraction",
   "main": "dist/index.js",

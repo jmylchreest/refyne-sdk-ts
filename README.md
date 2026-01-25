@@ -4,7 +4,7 @@ Official TypeScript SDK for the [Refyne API](https://refyne.uk/docs) - LLM-power
 
 **API Endpoint**: `https://api.refyne.uk` | **Documentation**: [refyne.uk/docs](https://refyne.uk/docs)
 
-[![npm version](https://badge.fury.io/js/@refyne%2Fsdk.svg)](https://www.npmjs.com/package/@refyne/sdk)
+[![npm version](https://badge.fury.io/js/refyne-sdk.svg)](https://www.npmjs.com/package/refyne-sdk)
 [![CI](https://github.com/jmylchreest/refyne-sdk-ts/actions/workflows/test.yml/badge.svg)](https://github.com/jmylchreest/refyne-sdk-ts/actions/workflows/test.yml)
 
 ## Features
@@ -21,19 +21,19 @@ Official TypeScript SDK for the [Refyne API](https://refyne.uk/docs) - LLM-power
 
 ```bash
 # npm
-npm install @refyne/sdk
+npm install refyne-sdk
 
 # pnpm
-pnpm add @refyne/sdk
+pnpm add refyne-sdk
 
 # bun
-bun add @refyne/sdk
+bun add refyne-sdk
 ```
 
 ## Quick Start
 
 ```typescript
-import { Refyne } from '@refyne/sdk';
+import { Refyne } from 'refyne-sdk';
 
 // Create client using builder pattern
 const refyne = new Refyne.Builder()
@@ -137,7 +137,7 @@ const refyne = new Refyne.Builder()
 Inject your own logger for debugging:
 
 ```typescript
-import { Logger } from '@refyne/sdk';
+import { Logger } from 'refyne-sdk';
 
 const myLogger: Logger = {
   debug: (msg, meta) => console.debug(`[DEBUG] ${msg}`, meta),
@@ -157,7 +157,7 @@ const refyne = new Refyne.Builder()
 The SDK respects `Cache-Control` headers. Provide a custom cache implementation:
 
 ```typescript
-import { Cache, CacheEntry } from '@refyne/sdk';
+import { Cache, CacheEntry } from 'refyne-sdk';
 
 class RedisCache implements Cache {
   async get(key: string): Promise<CacheEntry | undefined> {
@@ -225,7 +225,7 @@ import {
   ValidationError,
   AuthenticationError,
   UnsupportedAPIVersionError,
-} from '@refyne/sdk';
+} from 'refyne-sdk';
 
 try {
   await refyne.extract({ url, schema });

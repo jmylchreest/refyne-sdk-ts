@@ -8,7 +8,7 @@
  *
  * @example
  * ```typescript
- * import { Refyne } from '@refyne/sdk';
+ * import { Refyne } from 'refyne-sdk';
  *
  * const client = new Refyne({ apiKey: process.env.REFYNE_API_KEY! });
  *
