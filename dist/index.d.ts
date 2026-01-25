@@ -4128,6 +4128,16 @@ declare class Refyne {
  */
 declare function parseCacheControl(header: string | null): CacheControlDirectives;
 /**
+ * Hash a string using SHA-256 (truncated to 16 chars for cache keys).
+ * Uses Web Crypto API for secure hashing.
+ *
+ * Note: This is an async function. For synchronous use, call hashStringSync instead.
+ *
+ * @param str - The string to hash
+ * @returns Promise resolving to truncated SHA-256 hash (16 chars)
+ */
+declare function hashStringAsync(str: string): Promise<string>;
+/**
  * Configuration for the in-memory cache.
  */
 interface MemoryCacheConfig {
@@ -4172,6 +4182,22 @@ declare class MemoryCache implements Cache {
  * @returns Cache entry, or undefined if response should not be cached
  */
 declare function createCacheEntry(value: unknown, cacheControlHeader: string | null): CacheEntry | undefined;
+
+/**
+ * Custom fetch wrapper with retry, timeout, and caching support.
+ *
+ * @packageDocumentation
+ */
+
+/**
+ * Calculate exponential backoff with jitter.
+ *
+ * @param attempt - Current attempt number (1-based)
+ * @param baseMs - Base delay in milliseconds (default: 1000)
+ * @param maxMs - Maximum delay in milliseconds (default: 30000)
+ * @returns Delay in milliseconds with jitter applied
+ */
+declare function calculateBackoffWithJitter(attempt: number, baseMs?: number, maxMs?: number): number;
 
 /**
  * Error types for the Refyne SDK.
@@ -4279,6 +4305,24 @@ declare class TLSError extends RefyneError {
     constructor(url: string, tlsError: string);
 }
 /**
+ * Error thrown when a request times out.
+ */
+declare class TimeoutError extends RefyneError {
+    /** The timeout duration in milliseconds */
+    readonly timeoutMs: number;
+    /** The URL that timed out */
+    readonly url: string;
+    constructor(url: string, timeoutMs: number);
+}
+/**
+ * Error thrown when a network error occurs (not a timeout).
+ */
+declare class NetworkError extends RefyneError {
+    /** The underlying network error message */
+    readonly networkError: string;
+    constructor(message: string, networkError: string);
+}
+/**
  * Error thrown when authentication fails.
  *
  * This typically indicates an invalid or expired API key.
@@ -4339,4 +4383,4 @@ declare function detectRuntime(): {
  */
 declare function buildUserAgent(customSuffix?: string): string;
 
-export { type AnalyzeRequest, type AnalyzeResponse, AuthenticationError, type Cache, type CacheControlDirectives, type CacheEntry, type CrawlJobResponse, type CrawlRequest, DEFAULT_BASE_URL, DEFAULT_MAX_RETRIES, DEFAULT_TIMEOUT, type ExtractRequest, type ExtractResponse, ForbiddenError, type JobResponse, JobsClient, KeysClient, LLMClient, type Logger, MAX_KNOWN_API_VERSION, MIN_API_VERSION, MemoryCache, type MemoryCacheConfig, NotFoundError, RateLimitError, Refyne, RefyneBuilder, type RefyneConfig, RefyneError, SDK_VERSION, type SavedSiteOutput, type SchemaOutput, SchemasClient, SitesClient, TLSError, UnsupportedAPIVersionError, type UsageResponse, ValidationError, buildUserAgent, type components, createCacheEntry, Refyne as default, defaultLogger, detectRuntime, type operations, parseCacheControl, type paths };
+export { type AnalyzeRequest, type AnalyzeResponse, AuthenticationError, type Cache, type CacheControlDirectives, type CacheEntry, type CrawlJobResponse, type CrawlRequest, DEFAULT_BASE_URL, DEFAULT_MAX_RETRIES, DEFAULT_TIMEOUT, type ExtractRequest, type ExtractResponse, ForbiddenError, type JobResponse, JobsClient, KeysClient, LLMClient, type Logger, MAX_KNOWN_API_VERSION, MIN_API_VERSION, MemoryCache, type MemoryCacheConfig, NetworkError, NotFoundError, RateLimitError, Refyne, RefyneBuilder, type RefyneConfig, RefyneError, SDK_VERSION, type SavedSiteOutput, type SchemaOutput, SchemasClient, SitesClient, TLSError, TimeoutError, UnsupportedAPIVersionError, type UsageResponse, ValidationError, buildUserAgent, calculateBackoffWithJitter, type components, createCacheEntry, Refyne as default, defaultLogger, detectRuntime, hashStringAsync, type operations, parseCacheControl, type paths };

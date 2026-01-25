@@ -71,18 +71,45 @@ export function generateCacheKey(
 }
 
 /**
- * Simple hash function for auth tokens.
- * This isn't cryptographically secure, but it's fine for cache key differentiation.
+ * Hash a string using SHA-256 (truncated to 16 chars for cache keys).
+ * Uses Web Crypto API for secure hashing.
+ *
+ * Note: This is an async function. For synchronous use, call hashStringSync instead.
+ *
+ * @param str - The string to hash
+ * @returns Promise resolving to truncated SHA-256 hash (16 chars)
+ */
+export async function hashStringAsync(str: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(str);
+
+  // Use Web Crypto API (available in browsers, Node 18+, Deno, Bun)
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+
+  // Return first 16 characters (64 bits of entropy is sufficient for cache keys)
+  return hashHex.substring(0, 16);
+}
+
+/**
+ * Synchronous hash function using a simple but effective algorithm.
+ * This is used during client initialization before async operations are possible.
+ * Uses FNV-1a for better distribution than djb2.
+ *
+ * @param str - The string to hash
+ * @returns Hash string (base36 encoded)
  * @internal
  */
 export function hashString(str: string): string {
-  let hash = 0;
+  // FNV-1a hash - better distribution than djb2
+  let hash = 2166136261; // FNV offset basis
   for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32-bit integer
+    hash ^= str.charCodeAt(i);
+    // FNV prime multiplication (using bit operations for performance)
+    hash = (hash * 16777619) >>> 0;
   }
-  return Math.abs(hash).toString(36);
+  return hash.toString(36);
 }
 
 /**

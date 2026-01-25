@@ -164,6 +164,37 @@ export class TLSError extends RefyneError {
 }
 
 /**
+ * Error thrown when a request times out.
+ */
+export class TimeoutError extends RefyneError {
+  /** The timeout duration in milliseconds */
+  readonly timeoutMs: number;
+  /** The URL that timed out */
+  readonly url: string;
+
+  constructor(url: string, timeoutMs: number) {
+    super(`Request timed out after ${timeoutMs}ms: ${url}`, 0);
+    this.name = 'TimeoutError';
+    this.url = url;
+    this.timeoutMs = timeoutMs;
+  }
+}
+
+/**
+ * Error thrown when a network error occurs (not a timeout).
+ */
+export class NetworkError extends RefyneError {
+  /** The underlying network error message */
+  readonly networkError: string;
+
+  constructor(message: string, networkError: string) {
+    super(message, 0);
+    this.name = 'NetworkError';
+    this.networkError = networkError;
+  }
+}
+
+/**
  * Error thrown when authentication fails.
  *
  * This typically indicates an invalid or expired API key.

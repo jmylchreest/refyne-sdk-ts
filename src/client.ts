@@ -8,9 +8,10 @@ import createClient, { type Middleware } from 'openapi-fetch';
 import type { paths, components } from './types';
 import type { Logger, Cache } from './interfaces';
 import { defaultLogger } from './interfaces';
-import { MemoryCache } from './cache';
+import { MemoryCache, hashString } from './cache';
 import { createErrorFromResponse } from './errors';
 import { buildUserAgent, checkAPIVersionCompatibility, SDK_VERSION, MIN_API_VERSION, MAX_KNOWN_API_VERSION } from './version';
+import { createFetchWithRetry } from './fetch';
 
 // Re-export useful component types for consumers
 export type ExtractRequest = components['schemas']['ExtractInputBody'];
@@ -444,10 +445,21 @@ export class Refyne {
       headers['X-Referer'] = this.config.referer;
     }
 
-    // Create openapi-fetch client with middleware
+    // Create custom fetch with retry, timeout, and caching support
+    const customFetch = createFetchWithRetry({
+      timeout: this.config.timeout,
+      maxRetries: this.config.maxRetries,
+      cache: this.config.cache,
+      cacheEnabled: this.config.cacheEnabled,
+      logger: this.config.logger,
+      apiKeyHash: hashString(this.config.apiKey),
+    });
+
+    // Create openapi-fetch client with custom fetch
     this.httpClient = createClient<paths>({
       baseUrl: this.config.baseUrl,
       headers,
+      fetch: customFetch,
     });
 
     // Add middleware for error handling and API version checking

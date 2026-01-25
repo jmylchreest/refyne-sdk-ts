@@ -43,6 +43,29 @@ function parseCacheControl(header) {
   }
   return directives;
 }
+function generateCacheKey(method, url, authHash) {
+  const parts = [method.toUpperCase(), url];
+  if (authHash) {
+    parts.push(authHash);
+  }
+  return parts.join(":");
+}
+async function hashStringAsync(str) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(str);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+  return hashHex.substring(0, 16);
+}
+function hashString(str) {
+  let hash = 2166136261;
+  for (let i = 0; i < str.length; i++) {
+    hash ^= str.charCodeAt(i);
+    hash = hash * 16777619 >>> 0;
+  }
+  return hash.toString(36);
+}
 var MemoryCache = class {
   store = /* @__PURE__ */ new Map();
   maxEntries;
@@ -184,6 +207,27 @@ var TLSError = class extends RefyneError {
     this.tlsError = tlsError;
   }
 };
+var TimeoutError = class extends RefyneError {
+  /** The timeout duration in milliseconds */
+  timeoutMs;
+  /** The URL that timed out */
+  url;
+  constructor(url, timeoutMs) {
+    super(`Request timed out after ${timeoutMs}ms: ${url}`, 0);
+    this.name = "TimeoutError";
+    this.url = url;
+    this.timeoutMs = timeoutMs;
+  }
+};
+var NetworkError = class extends RefyneError {
+  /** The underlying network error message */
+  networkError;
+  constructor(message, networkError) {
+    super(message, 0);
+    this.name = "NetworkError";
+    this.networkError = networkError;
+  }
+};
 var AuthenticationError = class extends RefyneError {
   constructor(message = "Authentication failed", response) {
     super(message, 401, void 0, response);
@@ -302,6 +346,142 @@ function buildUserAgent(customSuffix) {
     userAgent += ` ${customSuffix}`;
   }
   return userAgent;
+}
+
+// src/fetch.ts
+function calculateBackoffWithJitter(attempt, baseMs = 1e3, maxMs = 3e4) {
+  const exponentialDelay = Math.pow(2, attempt - 1) * baseMs;
+  const cappedDelay = Math.min(exponentialDelay, maxMs);
+  const jitter = Math.random() * 0.25 * cappedDelay;
+  return Math.floor(cappedDelay + jitter);
+}
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+function isRetryableError(error) {
+  if (error instanceof TypeError) {
+    const message = error.message.toLowerCase();
+    return message.includes("network") || message.includes("failed to fetch") || message.includes("connection") || message.includes("econnreset") || message.includes("econnrefused");
+  }
+  if (error instanceof TimeoutError) {
+    return false;
+  }
+  return false;
+}
+function createFetchWithRetry(config) {
+  const { timeout, maxRetries, cache, cacheEnabled, logger, apiKeyHash } = config;
+  return async function fetchWithRetry(input, init) {
+    const url = input instanceof Request ? input.url : input.toString();
+    const method = init?.method?.toUpperCase() || "GET";
+    if (cacheEnabled && method === "GET") {
+      const cacheKey = generateCacheKey(method, url, apiKeyHash);
+      try {
+        const cached = await cache.get(cacheKey);
+        if (cached) {
+          logger.debug("Cache hit", { url, cacheKey });
+          return new Response(JSON.stringify(cached.value), {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json",
+              "X-Cache": "HIT"
+            }
+          });
+        }
+      } catch (err) {
+        logger.warn("Cache get error", { url, error: String(err) });
+      }
+    }
+    let lastError;
+    let attempt = 0;
+    while (attempt <= maxRetries) {
+      attempt++;
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
+        try {
+          const response = await fetch(input, {
+            ...init,
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+          if (response.status === 429 && attempt <= maxRetries) {
+            const retryAfter = parseInt(
+              response.headers.get("Retry-After") || "1",
+              10
+            );
+            const delayMs = retryAfter * 1e3;
+            logger.warn("Rate limited, retrying", {
+              url,
+              attempt,
+              retryAfterSeconds: retryAfter
+            });
+            await sleep(delayMs);
+            continue;
+          }
+          if (response.status >= 500 && attempt <= maxRetries) {
+            const delayMs = calculateBackoffWithJitter(attempt);
+            logger.warn("Server error, retrying", {
+              url,
+              attempt,
+              status: response.status,
+              delayMs
+            });
+            await sleep(delayMs);
+            continue;
+          }
+          if (cacheEnabled && method === "GET" && response.ok) {
+            const cacheKey = generateCacheKey(method, url, apiKeyHash);
+            const cacheControlHeader = response.headers.get("Cache-Control");
+            const clonedResponse = response.clone();
+            try {
+              const body = await clonedResponse.json();
+              const entry = createCacheEntry(body, cacheControlHeader);
+              if (entry) {
+                await cache.set(cacheKey, entry);
+                logger.debug("Cached response", { url, cacheKey });
+              }
+            } catch (err) {
+              logger.debug("Failed to cache response", {
+                url,
+                error: String(err)
+              });
+            }
+          }
+          return response;
+        } catch (error) {
+          clearTimeout(timeoutId);
+          if (error instanceof Error && error.name === "AbortError") {
+            throw new TimeoutError(url, timeout);
+          }
+          throw error;
+        }
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        if (error instanceof TimeoutError) {
+          throw error;
+        }
+        if (isRetryableError(error) && attempt <= maxRetries) {
+          const delayMs = calculateBackoffWithJitter(attempt);
+          logger.warn("Network error, retrying", {
+            url,
+            attempt,
+            error: lastError.message,
+            delayMs
+          });
+          await sleep(delayMs);
+          continue;
+        }
+        if (error instanceof TimeoutError || error instanceof RefyneError) {
+          throw error;
+        }
+        throw new NetworkError(
+          `Request failed after ${attempt} attempts: ${lastError.message}`,
+          lastError.message
+        );
+      }
+    }
+    throw lastError || new Error("Request failed");
+  };
 }
 
 // src/client.ts
@@ -607,9 +787,18 @@ var Refyne = class {
       headers["Referer"] = this.config.referer;
       headers["X-Referer"] = this.config.referer;
     }
+    const customFetch = createFetchWithRetry({
+      timeout: this.config.timeout,
+      maxRetries: this.config.maxRetries,
+      cache: this.config.cache,
+      cacheEnabled: this.config.cacheEnabled,
+      logger: this.config.logger,
+      apiKeyHash: hashString(this.config.apiKey)
+    });
     this.httpClient = createClient({
       baseUrl: this.config.baseUrl,
-      headers
+      headers,
+      fetch: customFetch
     });
     this.httpClient.use(this.createErrorMiddleware());
     this.jobs = new JobsClient(this.httpClient);
@@ -699,6 +888,6 @@ var Refyne = class {
 };
 var client_default = Refyne;
 
-export { AuthenticationError, DEFAULT_BASE_URL, DEFAULT_MAX_RETRIES, DEFAULT_TIMEOUT, ForbiddenError, JobsClient, KeysClient, LLMClient, MAX_KNOWN_API_VERSION, MIN_API_VERSION, MemoryCache, NotFoundError, RateLimitError, Refyne, RefyneBuilder, RefyneError, SDK_VERSION, SchemasClient, SitesClient, TLSError, UnsupportedAPIVersionError, ValidationError, buildUserAgent, createCacheEntry, client_default as default, defaultLogger, detectRuntime, parseCacheControl };
+export { AuthenticationError, DEFAULT_BASE_URL, DEFAULT_MAX_RETRIES, DEFAULT_TIMEOUT, ForbiddenError, JobsClient, KeysClient, LLMClient, MAX_KNOWN_API_VERSION, MIN_API_VERSION, MemoryCache, NetworkError, NotFoundError, RateLimitError, Refyne, RefyneBuilder, RefyneError, SDK_VERSION, SchemasClient, SitesClient, TLSError, TimeoutError, UnsupportedAPIVersionError, ValidationError, buildUserAgent, calculateBackoffWithJitter, createCacheEntry, client_default as default, defaultLogger, detectRuntime, hashStringAsync, parseCacheControl };
 //# sourceMappingURL=index.mjs.map
 //# sourceMappingURL=index.mjs.map

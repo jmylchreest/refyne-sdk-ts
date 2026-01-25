@@ -54,8 +54,11 @@ export type {
 export { defaultLogger } from './interfaces';
 
 // Cache implementation
-export { MemoryCache, parseCacheControl, createCacheEntry } from './cache';
+export { MemoryCache, parseCacheControl, createCacheEntry, hashStringAsync } from './cache';
 export type { MemoryCacheConfig } from './cache';
+
+// Fetch utilities (for custom implementations)
+export { calculateBackoffWithJitter } from './fetch';
 
 // Error types
 export {
@@ -64,6 +67,8 @@ export {
   ValidationError,
   UnsupportedAPIVersionError,
   TLSError,
+  TimeoutError,
+  NetworkError,
   AuthenticationError,
   ForbiddenError,
   NotFoundError,
