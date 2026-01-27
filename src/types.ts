@@ -850,6 +850,12 @@ export interface components {
              */
             extract_from_seeds?: boolean;
             /**
+             * @description Page fetching mode: auto (detect and retry with browser if needed), static (fast, Colly-based), dynamic (browser rendering for JS-heavy sites, requires content_dynamic feature)
+             * @default auto
+             * @enum {string}
+             */
+            fetch_mode: "auto" | "static" | "dynamic";
+            /**
              * @description Regex pattern to filter URLs. Only matching URLs are crawled.
              * @example /product/.*|/item/.*
              */
@@ -1826,10 +1832,8 @@ export interface components {
             visibility: string;
         };
         ServiceKeyInput: {
-            /** @description API key for the provider */
-            api_key: string;
-            /** @description Default model to use */
-            default_model: string;
+            /** @description API key for the provider (required for new keys, optional for updates) */
+            api_key?: string;
             /** @description Whether this provider is enabled */
             is_enabled: boolean;
             /**
@@ -1840,7 +1844,6 @@ export interface components {
         };
         ServiceKeyResponse: {
             created_at: string;
-            default_model: string;
             has_key: boolean;
             is_enabled: boolean;
             provider: string;
