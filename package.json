@@ -1,6 +1,6 @@
 {
   "name": "refyne-sdk",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Official TypeScript SDK for the Refyne API - LLM-powered web extraction",
   "main": "dist/index.js",
   "module": "dist/index.mjs",

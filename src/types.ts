@@ -590,8 +590,8 @@ export interface components {
             sample_links?: string[] | null;
             /** @description Brief site description */
             site_summary?: string;
-            /** @description Suggested YAML schema */
-            suggested_schema?: string;
+            /** @description Schema (JSON object or YAML string) */
+            suggested_schema?: unknown;
         };
         AnalysisResultOutput: {
             /** @description Detected data elements */
@@ -606,8 +606,8 @@ export interface components {
             sample_links: string[] | null;
             /** @description Brief site description */
             site_summary: string;
-            /** @description Suggested YAML schema */
-            suggested_schema: string;
+            /** @description Schema suggestion (JSON object) */
+            suggested_schema: unknown;
         };
         AnalyticsJobResponse: {
             completed_at?: string;
@@ -667,8 +667,8 @@ export interface components {
             sample_links: string[] | null;
             /** @description Brief description of what the site/page is about */
             site_summary: string;
-            /** @description YAML schema suggestion for extraction */
-            suggested_schema: string;
+            /** @description Schema suggestion for extraction (JSON object) */
+            suggested_schema: unknown;
         };
         CleanerChainItemResponse: {
             /** @description Cleaner name */
