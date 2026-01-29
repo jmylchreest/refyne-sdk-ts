@@ -831,6 +831,13 @@ var Refyne = class {
   config;
   logger;
   apiVersionChecked = false;
+  /**
+   * Domain fetch mode cache for auto mode.
+   * When a domain returns fetch_mode_used='dynamic', the SDK remembers this
+   * and automatically uses dynamic mode for subsequent requests to that domain.
+   * This persists for the lifetime of the SDK instance.
+   */
+  domainFetchModes = /* @__PURE__ */ new Map();
   /** Sub-client for job operations */
   jobs;
   /** Sub-client for schema operations */
@@ -909,33 +916,76 @@ var Refyne = class {
   // =========================================================================
   /**
    * Extract structured data from a single web page.
+   *
+   * When using auto mode (the default), the SDK will automatically use dynamic
+   * rendering for domains that have previously required it. The SDK learns which
+   * domains need dynamic mode based on the `fetch_mode_used` field in API responses.
+   *
+   * @param request - Extraction request with URL, schema, and optional fetch_mode
+   * @returns Extracted data matching the schema
    */
   async extract(request) {
+    const resolvedMode = this.resolveFetchMode(request.url, request.fetch_mode);
     const { data, error } = await this.httpClient.POST("/api/v1/extract", {
-      body: request
+      body: {
+        ...request,
+        fetch_mode: resolvedMode
+      }
     });
     if (error) throw error;
-    return data;
+    const response = data;
+    this.learnFetchMode(request.url, response.fetch_mode_used);
+    return response;
   }
   /**
    * Start an asynchronous crawl job.
+   *
+   * When using auto mode (the default), the SDK will automatically use dynamic
+   * rendering for domains that have previously required it. The SDK learns which
+   * domains need dynamic mode based on previous extract/analyze operations.
+   *
+   * @param request - Crawl request with seed URL, schema, options, and optional fetch_mode
+   * @returns Crawl job response with job ID and status
    */
   async crawl(request) {
+    const requestedMode = request.fetch_mode ?? request.options?.fetch_mode ?? "auto";
+    const resolvedMode = this.resolveFetchMode(request.url, requestedMode);
+    const { fetch_mode: _ignoredFetchMode, ...restRequest } = request;
+    const body = {
+      ...restRequest,
+      options: {
+        ...request.options,
+        fetch_mode: resolvedMode
+      }
+    };
     const { data, error } = await this.httpClient.POST("/api/v1/crawl", {
-      body: request
+      body
     });
     if (error) throw error;
     return data;
   }
   /**
    * Analyze a website to detect structure and suggest schemas.
+   *
+   * When using auto mode (the default), the SDK will automatically use dynamic
+   * rendering for domains that have previously required it. The SDK learns which
+   * domains need dynamic mode based on the `fetch_mode_used` field in API responses.
+   *
+   * @param request - Analysis request with URL and optional fetch_mode
+   * @returns Analysis results including detected elements and suggested schema
    */
   async analyze(request) {
+    const resolvedMode = this.resolveFetchMode(request.url, request.fetch_mode);
     const { data, error } = await this.httpClient.POST("/api/v1/analyze", {
-      body: request
+      body: {
+        ...request,
+        fetch_mode: resolvedMode
+      }
     });
     if (error) throw error;
-    return data;
+    const response = data;
+    this.learnFetchMode(request.url, response.fetch_mode_used);
+    return response;
   }
   /**
    * Get usage statistics for the current billing period.
@@ -968,6 +1018,77 @@ var Refyne = class {
     const { data, error } = await this.httpClient.GET("/api/v1/pricing/tiers");
     if (error) throw error;
     return data;
+  }
+  // =========================================================================
+  // Auto Mode Helpers
+  // =========================================================================
+  /**
+   * Extract the domain from a URL.
+   * @internal
+   */
+  extractDomain(url) {
+    try {
+      const parsed = new URL(url);
+      return parsed.hostname;
+    } catch {
+      const match = url.match(/^(?:https?:\/\/)?([^:/\s]+)/);
+      return match?.[1] || url;
+    }
+  }
+  /**
+   * Resolve the effective fetch mode for a request.
+   * If fetch_mode is 'auto' and we have learned that this domain needs dynamic mode,
+   * return 'dynamic'. Otherwise return the original fetch_mode.
+   * @internal
+   */
+  resolveFetchMode(url, requestedMode = "auto") {
+    if (requestedMode !== "auto") {
+      return requestedMode;
+    }
+    const domain = this.extractDomain(url);
+    const learnedMode = this.domainFetchModes.get(domain);
+    if (learnedMode === "dynamic") {
+      this.logger.debug(`Auto mode: using learned dynamic fetch for domain ${domain}`);
+      return "dynamic";
+    }
+    return "auto";
+  }
+  /**
+   * Learn the fetch mode from an API response.
+   * If the response indicates dynamic mode was used, remember this for the domain.
+   * @internal
+   */
+  learnFetchMode(url, fetchModeUsed) {
+    if (fetchModeUsed === "dynamic") {
+      const domain = this.extractDomain(url);
+      if (!this.domainFetchModes.has(domain)) {
+        this.logger.debug(`Auto mode: learned that ${domain} requires dynamic fetch`);
+      }
+      this.domainFetchModes.set(domain, "dynamic");
+    }
+  }
+  /**
+   * Clear learned fetch modes for all domains.
+   * Useful for testing or when you want to reset auto-mode learning.
+   */
+  clearLearnedFetchModes() {
+    this.domainFetchModes.clear();
+    this.logger.debug("Cleared all learned fetch modes");
+  }
+  /**
+   * Clear learned fetch mode for a specific domain.
+   * @param domain - Domain to clear (e.g., 'example.com')
+   */
+  clearLearnedFetchMode(domain) {
+    this.domainFetchModes.delete(domain);
+    this.logger.debug(`Cleared learned fetch mode for ${domain}`);
+  }
+  /**
+   * Get learned fetch modes (for debugging/inspection).
+   * @returns Map of domains to their learned fetch modes
+   */
+  getLearnedFetchModes() {
+    return this.domainFetchModes;
   }
   // =========================================================================
   // Utility Methods

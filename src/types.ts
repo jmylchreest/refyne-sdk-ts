@@ -633,8 +633,8 @@ export interface components {
             user_id: string;
         };
         AnalyzeInputBody: {
-            /** @description Capture debug information (LLM prompts/responses). Defaults to true for analyze jobs. */
-            debug?: boolean;
+            /** @description Enable debug capture to store raw LLM request/response for troubleshooting. Defaults to true for analyze jobs. */
+            capture_debug?: boolean;
             /**
              * Format: int64
              * @description Crawl depth: 0=single page, 1=one level deep
@@ -938,6 +938,8 @@ export interface components {
             value: string;
         };
         CreateCrawlJobInputBody: {
+            /** @description Enable debug capture to store raw LLM request/response for troubleshooting */
+            capture_debug?: boolean;
             /** @description Content cleaner chain (default: [markdown]) */
             cleaner_chain?: components["schemas"]["JobCleanerConfigInput"][] | null;
             /** @description Optional LLM configuration override (BYOK) */
@@ -1200,6 +1202,8 @@ export interface components {
             total: number;
         };
         ExtractInputBody: {
+            /** @description Enable debug capture to store raw LLM request/response for troubleshooting */
+            capture_debug?: boolean;
             /** @description Content cleaner chain (default: [markdown]) */
             cleaner_chain?: components["schemas"]["CleanerConfigInput"][] | null;
             /**

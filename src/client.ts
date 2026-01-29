@@ -15,15 +15,27 @@ import { createFetchWithRetry } from './fetch';
 
 // Re-export useful component types for consumers
 export type ExtractRequest = components['schemas']['ExtractInputBody'];
-export type ExtractResponse = components['schemas']['ExtractOutputBody'];
-export type CrawlRequest = components['schemas']['CreateCrawlJobInputBody'];
+export type ExtractResponse = components['schemas']['ExtractOutputBody'] & {
+  /** Fetch mode actually used (static or dynamic). Useful for SDK auto-mode learning. */
+  fetch_mode_used?: 'static' | 'dynamic';
+};
+export type CrawlRequest = components['schemas']['CreateCrawlJobInputBody'] & {
+  /** Convenience: set fetch mode at top level (will be merged into options) */
+  fetch_mode?: FetchMode;
+};
 export type CrawlJobResponse = components['schemas']['CrawlJobResponseBody'];
 export type AnalyzeRequest = components['schemas']['AnalyzeInputBody'];
-export type AnalyzeResponse = components['schemas']['AnalyzeResponseBody'];
+export type AnalyzeResponse = components['schemas']['AnalyzeResponseBody'] & {
+  /** Fetch mode actually used (static or dynamic). Useful for SDK auto-mode learning. */
+  fetch_mode_used?: 'static' | 'dynamic';
+};
 export type JobResponse = components['schemas']['JobResponse'];
 export type SchemaOutput = components['schemas']['SchemaOutput'];
 export type SavedSiteOutput = components['schemas']['SavedSiteOutput'];
 export type UsageResponse = components['schemas']['GetUsageOutputBody'];
+
+/** Fetch mode options for API requests */
+export type FetchMode = 'auto' | 'static' | 'dynamic';
 
 /**
  * Configuration options for the Refyne client.
@@ -493,6 +505,14 @@ export class Refyne {
   private readonly logger: Logger;
   private apiVersionChecked = false;
 
+  /**
+   * Domain fetch mode cache for auto mode.
+   * When a domain returns fetch_mode_used='dynamic', the SDK remembers this
+   * and automatically uses dynamic mode for subsequent requests to that domain.
+   * This persists for the lifetime of the SDK instance.
+   */
+  private readonly domainFetchModes: Map<string, 'static' | 'dynamic'> = new Map();
+
   /** Sub-client for job operations */
   readonly jobs: JobsClient;
   /** Sub-client for schema operations */
@@ -592,21 +612,61 @@ export class Refyne {
 
   /**
    * Extract structured data from a single web page.
+   *
+   * When using auto mode (the default), the SDK will automatically use dynamic
+   * rendering for domains that have previously required it. The SDK learns which
+   * domains need dynamic mode based on the `fetch_mode_used` field in API responses.
+   *
+   * @param request - Extraction request with URL, schema, and optional fetch_mode
+   * @returns Extracted data matching the schema
    */
   async extract(request: ExtractRequest): Promise<ExtractResponse> {
+    // Resolve fetch mode based on auto-mode learning
+    const resolvedMode = this.resolveFetchMode(request.url, request.fetch_mode);
+
     const { data, error } = await this.httpClient.POST('/api/v1/extract', {
-      body: request,
+      body: {
+        ...request,
+        fetch_mode: resolvedMode,
+      },
     });
     if (error) throw error;
-    return data;
+
+    // Learn from the response for future auto-mode decisions
+    const response = data as ExtractResponse;
+    this.learnFetchMode(request.url, response.fetch_mode_used);
+
+    return response;
   }
 
   /**
    * Start an asynchronous crawl job.
+   *
+   * When using auto mode (the default), the SDK will automatically use dynamic
+   * rendering for domains that have previously required it. The SDK learns which
+   * domains need dynamic mode based on previous extract/analyze operations.
+   *
+   * @param request - Crawl request with seed URL, schema, options, and optional fetch_mode
+   * @returns Crawl job response with job ID and status
    */
   async crawl(request: CrawlRequest): Promise<CrawlJobResponse> {
+    // Extract fetch_mode from top-level (convenience) or from options
+    const requestedMode = request.fetch_mode ?? (request.options as { fetch_mode?: FetchMode } | undefined)?.fetch_mode ?? 'auto';
+    const resolvedMode = this.resolveFetchMode(request.url, requestedMode);
+
+    // Build the request with fetch_mode in options
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { fetch_mode: _ignoredFetchMode, ...restRequest } = request;
+    const body = {
+      ...restRequest,
+      options: {
+        ...request.options,
+        fetch_mode: resolvedMode,
+      },
+    };
+
     const { data, error } = await this.httpClient.POST('/api/v1/crawl', {
-      body: request,
+      body: body as components['schemas']['CreateCrawlJobInputBody'],
     });
     if (error) throw error;
     return data;
@@ -614,13 +674,31 @@ export class Refyne {
 
   /**
    * Analyze a website to detect structure and suggest schemas.
+   *
+   * When using auto mode (the default), the SDK will automatically use dynamic
+   * rendering for domains that have previously required it. The SDK learns which
+   * domains need dynamic mode based on the `fetch_mode_used` field in API responses.
+   *
+   * @param request - Analysis request with URL and optional fetch_mode
+   * @returns Analysis results including detected elements and suggested schema
    */
   async analyze(request: AnalyzeRequest): Promise<AnalyzeResponse> {
+    // Resolve fetch mode based on auto-mode learning
+    const resolvedMode = this.resolveFetchMode(request.url, request.fetch_mode);
+
     const { data, error } = await this.httpClient.POST('/api/v1/analyze', {
-      body: request,
+      body: {
+        ...request,
+        fetch_mode: resolvedMode,
+      },
     });
     if (error) throw error;
-    return data;
+
+    // Learn from the response for future auto-mode decisions
+    const response = data as AnalyzeResponse;
+    this.learnFetchMode(request.url, response.fetch_mode_used);
+
+    return response;
   }
 
   /**
@@ -657,6 +735,85 @@ export class Refyne {
     const { data, error } = await this.httpClient.GET('/api/v1/pricing/tiers');
     if (error) throw error;
     return data;
+  }
+
+  // =========================================================================
+  // Auto Mode Helpers
+  // =========================================================================
+
+  /**
+   * Extract the domain from a URL.
+   * @internal
+   */
+  private extractDomain(url: string): string {
+    try {
+      const parsed = new URL(url);
+      return parsed.hostname;
+    } catch {
+      // If URL parsing fails, try to extract domain manually
+      const match = url.match(/^(?:https?:\/\/)?([^:/\s]+)/);
+      return match?.[1] || url;
+    }
+  }
+
+  /**
+   * Resolve the effective fetch mode for a request.
+   * If fetch_mode is 'auto' and we have learned that this domain needs dynamic mode,
+   * return 'dynamic'. Otherwise return the original fetch_mode.
+   * @internal
+   */
+  private resolveFetchMode(url: string, requestedMode: FetchMode = 'auto'): FetchMode {
+    if (requestedMode !== 'auto') {
+      return requestedMode;
+    }
+    const domain = this.extractDomain(url);
+    const learnedMode = this.domainFetchModes.get(domain);
+    if (learnedMode === 'dynamic') {
+      this.logger.debug(`Auto mode: using learned dynamic fetch for domain ${domain}`);
+      return 'dynamic';
+    }
+    return 'auto'; // Let the API decide on first request
+  }
+
+  /**
+   * Learn the fetch mode from an API response.
+   * If the response indicates dynamic mode was used, remember this for the domain.
+   * @internal
+   */
+  private learnFetchMode(url: string, fetchModeUsed?: 'static' | 'dynamic'): void {
+    if (fetchModeUsed === 'dynamic') {
+      const domain = this.extractDomain(url);
+      if (!this.domainFetchModes.has(domain)) {
+        this.logger.debug(`Auto mode: learned that ${domain} requires dynamic fetch`);
+      }
+      this.domainFetchModes.set(domain, 'dynamic');
+    }
+  }
+
+  /**
+   * Clear learned fetch modes for all domains.
+   * Useful for testing or when you want to reset auto-mode learning.
+   */
+  clearLearnedFetchModes(): void {
+    this.domainFetchModes.clear();
+    this.logger.debug('Cleared all learned fetch modes');
+  }
+
+  /**
+   * Clear learned fetch mode for a specific domain.
+   * @param domain - Domain to clear (e.g., 'example.com')
+   */
+  clearLearnedFetchMode(domain: string): void {
+    this.domainFetchModes.delete(domain);
+    this.logger.debug(`Cleared learned fetch mode for ${domain}`);
+  }
+
+  /**
+   * Get learned fetch modes (for debugging/inspection).
+   * @returns Map of domains to their learned fetch modes
+   */
+  getLearnedFetchModes(): ReadonlyMap<string, 'static' | 'dynamic'> {
+    return this.domainFetchModes;
   }
 
   // =========================================================================

@@ -42,6 +42,7 @@ export type {
   SchemaOutput,
   SavedSiteOutput,
   UsageResponse,
+  FetchMode,
 } from './client';
 
 // Interfaces for dependency injection

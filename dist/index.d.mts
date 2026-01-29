@@ -592,7 +592,7 @@ interface components {
             sample_links?: string[] | null;
             /** @description Brief site description */
             site_summary?: string;
-            /** @description Suggested YAML schema */
+            /** @description Schema (JSON or YAML format) */
             suggested_schema?: string;
         };
         AnalysisResultOutput: {
@@ -608,7 +608,7 @@ interface components {
             sample_links: string[] | null;
             /** @description Brief site description */
             site_summary: string;
-            /** @description Suggested YAML schema */
+            /** @description Schema suggestion (JSON format) */
             suggested_schema: string;
         };
         AnalyticsJobResponse: {
@@ -635,8 +635,8 @@ interface components {
             user_id: string;
         };
         AnalyzeInputBody: {
-            /** @description Capture debug information (LLM prompts/responses). Defaults to true for analyze jobs. */
-            debug?: boolean;
+            /** @description Enable debug capture to store raw LLM request/response for troubleshooting. Defaults to true for analyze jobs. */
+            capture_debug?: boolean;
             /**
              * Format: int64
              * @description Crawl depth: 0=single page, 1=one level deep
@@ -669,7 +669,7 @@ interface components {
             sample_links: string[] | null;
             /** @description Brief description of what the site/page is about */
             site_summary: string;
-            /** @description YAML schema suggestion for extraction */
+            /** @description Schema suggestion for extraction (JSON format) */
             suggested_schema: string;
         };
         CleanerChainItemResponse: {
@@ -677,7 +677,7 @@ interface components {
             name: string;
         };
         CleanerConfigInput: {
-            /** @description Cleaner name (noop, markdown, trafilatura, readability) */
+            /** @description Cleaner name (noop, refyne) */
             name: string;
             /** @description Cleaner-specific options */
             options?: components["schemas"]["CleanerOptionsInput"];
@@ -693,46 +693,31 @@ interface components {
             type: string;
         };
         CleanerOptionsInput: {
-            /** @description Base URL for resolving relative links (readability, refyne) */
+            /** @description Base URL for resolving relative links */
             base_url?: string;
-            /** @description Extract heading structure to frontmatter (refyne markdown) */
+            /** @description Extract heading structure to frontmatter (markdown) */
             extract_headings?: boolean;
-            /** @description Extract images to frontmatter with {{IMG_001}} placeholders (refyne markdown) */
+            /** @description Extract images to frontmatter with {{IMG_001}} placeholders (markdown) */
             extract_images?: boolean;
-            /**
-             * @description Include images in output (trafilatura)
-             * @default true
-             */
-            images: boolean;
-            /** @description Prepend YAML frontmatter with metadata (refyne markdown output) */
+            /** @description Prepend YAML frontmatter with metadata (markdown output) */
             include_frontmatter?: boolean;
-            /** @description CSS selectors for elements to always keep (refyne) */
+            /** @description CSS selectors for elements to always keep */
             keep_selectors?: string[] | null;
             /**
-             * @description Include links in output (trafilatura)
-             * @default true
-             */
-            links: boolean;
-            /**
-             * @description Output format (trafilatura, readability, refyne)
+             * @description Output format: html, text, or markdown
              * @default html
              * @enum {string}
              */
             output: "html" | "text" | "markdown";
             /**
-             * @description Refyne preset: default, minimal, or aggressive
+             * @description Preset: default, minimal, or aggressive
              * @enum {string}
              */
             preset?: "default" | "minimal" | "aggressive";
-            /** @description CSS selectors for elements to remove (refyne) */
+            /** @description CSS selectors for elements to remove */
             remove_selectors?: string[] | null;
-            /** @description Resolve relative URLs to absolute using base_url (refyne) */
+            /** @description Resolve relative URLs to absolute using base_url */
             resolve_urls?: boolean;
-            /**
-             * @description Include tables in output (trafilatura)
-             * @default true
-             */
-            tables: boolean;
         };
         CleanerResponse: {
             /** @description Description of what this cleaner does */
@@ -867,6 +852,12 @@ interface components {
              */
             extract_from_seeds?: boolean;
             /**
+             * @description Page fetching mode: auto (detect and retry with browser if needed), static (fast, Colly-based), dynamic (browser rendering for JS-heavy sites, requires content_dynamic feature)
+             * @default auto
+             * @enum {string}
+             */
+            fetch_mode: "auto" | "static" | "dynamic";
+            /**
              * @description Regex pattern to filter URLs. Only matching URLs are crawled.
              * @example /product/.*|/item/.*
              */
@@ -949,6 +940,8 @@ interface components {
             value: string;
         };
         CreateCrawlJobInputBody: {
+            /** @description Enable debug capture to store raw LLM request/response for troubleshooting */
+            capture_debug?: boolean;
             /** @description Content cleaner chain (default: [markdown]) */
             cleaner_chain?: components["schemas"]["JobCleanerConfigInput"][] | null;
             /** @description Optional LLM configuration override (BYOK) */
@@ -1040,24 +1033,14 @@ interface components {
             visibility: "private" | "public";
         };
         DebugCaptureEntry: {
-            /** @description Preprocessing hints applied */
-            hints_applied?: {
-                [key: string]: string;
-            };
             /** @description Capture ID */
             id: string;
             /** @description Job type (analyze, extract, crawl) */
             job_type: string;
-            /** @description Full prompt sent to LLM (for analyze jobs) */
-            prompt?: string;
-            /** @description Page content (for extract/crawl jobs) */
-            raw_content?: string;
-            /** @description LLM request metadata */
+            /** @description LLM request with metadata and payload */
             request: components["schemas"]["DebugCaptureLLMRequest"];
-            /** @description LLM response metadata */
+            /** @description LLM response with metadata and payload */
             response: components["schemas"]["DebugCaptureLLMResponse"];
-            /** @description Schema used for extraction */
-            schema?: string;
             /** @description When the request was made */
             timestamp: string;
             /** @description Page URL being processed */
@@ -1071,8 +1054,16 @@ interface components {
             content_size: number;
             /** @description Content fetch mode */
             fetch_mode?: string;
+            /** @description Preprocessing hints applied */
+            hints_applied?: {
+                [key: string]: string;
+            };
             /** @description LLM model used */
             model: string;
+            /** @description Cleaned page content sent to LLM */
+            page_content?: string;
+            /** @description Full prompt sent to LLM (for analyze jobs) */
+            prompt?: string;
             /**
              * Format: int64
              * @description Total prompt size including system instructions
@@ -1080,6 +1071,8 @@ interface components {
             prompt_size: number;
             /** @description LLM provider used */
             provider: string;
+            /** @description Schema used for extraction */
+            schema?: string;
         };
         DebugCaptureLLMResponse: {
             /**
@@ -1099,6 +1092,8 @@ interface components {
              * @description Output tokens generated
              */
             output_tokens: number;
+            /** @description Raw LLM response text */
+            raw_output?: string;
             /** @description Whether the request succeeded */
             success: boolean;
         };
@@ -1209,6 +1204,8 @@ interface components {
             total: number;
         };
         ExtractInputBody: {
+            /** @description Enable debug capture to store raw LLM request/response for troubleshooting */
+            capture_debug?: boolean;
             /** @description Content cleaner chain (default: [markdown]) */
             cleaner_chain?: components["schemas"]["CleanerConfigInput"][] | null;
             /**
@@ -1418,52 +1415,61 @@ interface components {
             url: string;
         };
         JobCleanerConfigInput: {
-            /** @description Cleaner name (noop, markdown, trafilatura, readability) */
+            /** @description Cleaner name (noop, refyne) */
             name: string;
             /** @description Cleaner-specific options */
             options?: components["schemas"]["JobCleanerOptionsInput"];
         };
         JobCleanerOptionsInput: {
-            /** @description Base URL for resolving relative links (readability, refyne) */
+            /** @description Base URL for resolving relative links */
             base_url?: string;
-            /** @description Extract heading structure to frontmatter (refyne markdown) */
+            /** @description Extract heading structure to frontmatter (markdown) */
             extract_headings?: boolean;
-            /** @description Extract images to frontmatter with {{IMG_001}} placeholders (refyne markdown) */
+            /** @description Extract images to frontmatter with {{IMG_001}} placeholders (markdown) */
             extract_images?: boolean;
-            /**
-             * @description Include images in output (trafilatura)
-             * @default true
-             */
-            images: boolean;
-            /** @description Prepend YAML frontmatter with metadata (refyne markdown output) */
+            /** @description Prepend YAML frontmatter with metadata (markdown output) */
             include_frontmatter?: boolean;
-            /** @description CSS selectors for elements to always keep (refyne) */
+            /** @description CSS selectors for elements to always keep */
             keep_selectors?: string[] | null;
             /**
-             * @description Include links in output (trafilatura)
-             * @default true
-             */
-            links: boolean;
-            /**
-             * @description Output format (trafilatura, readability, refyne)
+             * @description Output format: html, text, or markdown
              * @default html
              * @enum {string}
              */
             output: "html" | "text" | "markdown";
             /**
-             * @description Refyne preset: default, minimal, or aggressive
+             * @description Preset: default, minimal, or aggressive
              * @enum {string}
              */
             preset?: "default" | "minimal" | "aggressive";
-            /** @description CSS selectors for elements to remove (refyne) */
+            /** @description CSS selectors for elements to remove */
             remove_selectors?: string[] | null;
-            /** @description Resolve relative URLs to absolute using base_url (refyne) */
+            /** @description Resolve relative URLs to absolute using base_url */
             resolve_urls?: boolean;
+        };
+        JobQueueStats: {
+            /** @description Pending jobs by tier */
+            pending_by_tier: {
+                [key: string]: number;
+            };
             /**
-             * @description Include tables in output (trafilatura)
-             * @default true
+             * Format: int64
+             * @description Total pending jobs
              */
-            tables: boolean;
+            pending_total: number;
+            /** @description Running jobs by tier */
+            running_by_tier: {
+                [key: string]: number;
+            };
+            /** @description Running jobs by user ID */
+            running_by_user: {
+                [key: string]: number;
+            };
+            /**
+             * Format: int64
+             * @description Total running jobs
+             */
+            running_total: number;
         };
         JobResponse: {
             capture_debug: boolean;
@@ -1699,6 +1705,18 @@ interface components {
             is_free: boolean;
             name: string;
         };
+        RateLimitStats: {
+            /**
+             * Format: int64
+             * @description Number of currently suspended API keys
+             */
+            active_suspensions: number;
+            /**
+             * Format: int64
+             * @description Total rate limit entries in database
+             */
+            total_entries: number;
+        };
         ReadyzOutputBody: {
             /** @description Readiness status */
             status: string;
@@ -1822,10 +1840,8 @@ interface components {
             visibility: string;
         };
         ServiceKeyInput: {
-            /** @description API key for the provider */
-            api_key: string;
-            /** @description Default model to use */
-            default_model: string;
+            /** @description API key for the provider (required for new keys, optional for updates) */
+            api_key?: string;
             /** @description Whether this provider is enabled */
             is_enabled: boolean;
             /**
@@ -1836,7 +1852,6 @@ interface components {
         };
         ServiceKeyResponse: {
             created_at: string;
-            default_model: string;
             has_key: boolean;
             is_enabled: boolean;
             provider: string;
@@ -1868,6 +1883,12 @@ interface components {
         SyncTiersOutputBody: {
             /** @description Sync result message */
             message: string;
+        };
+        SystemMetrics: {
+            /** @description Job queue statistics */
+            job_queue: components["schemas"]["JobQueueStats"];
+            /** @description API key rate limit statistics */
+            rate_limits: components["schemas"]["RateLimitStats"];
         };
         TierLimitsResponse: {
             /**
@@ -3693,15 +3714,26 @@ interface Cache {
 declare const defaultLogger: Logger;
 
 type ExtractRequest = components['schemas']['ExtractInputBody'];
-type ExtractResponse = components['schemas']['ExtractOutputBody'];
-type CrawlRequest = components['schemas']['CreateCrawlJobInputBody'];
+type ExtractResponse = components['schemas']['ExtractOutputBody'] & {
+    /** Fetch mode actually used (static or dynamic). Useful for SDK auto-mode learning. */
+    fetch_mode_used?: 'static' | 'dynamic';
+};
+type CrawlRequest = components['schemas']['CreateCrawlJobInputBody'] & {
+    /** Convenience: set fetch mode at top level (will be merged into options) */
+    fetch_mode?: FetchMode;
+};
 type CrawlJobResponse = components['schemas']['CrawlJobResponseBody'];
 type AnalyzeRequest = components['schemas']['AnalyzeInputBody'];
-type AnalyzeResponse = components['schemas']['AnalyzeResponseBody'];
+type AnalyzeResponse = components['schemas']['AnalyzeResponseBody'] & {
+    /** Fetch mode actually used (static or dynamic). Useful for SDK auto-mode learning. */
+    fetch_mode_used?: 'static' | 'dynamic';
+};
 type JobResponse = components['schemas']['JobResponse'];
 type SchemaOutput = components['schemas']['SchemaOutput'];
 type SavedSiteOutput = components['schemas']['SavedSiteOutput'];
 type UsageResponse = components['schemas']['GetUsageOutputBody'];
+/** Fetch mode options for API requests */
+type FetchMode = 'auto' | 'static' | 'dynamic';
 /**
  * Configuration options for the Refyne client.
  */
@@ -3867,28 +3899,29 @@ declare class JobsClient {
     /** Get debug capture data for a job. */
     getDebugCapture(id: string): Promise<{
         captures: {
-            hints_applied?: {
-                [key: string]: string;
-            } | undefined;
             id: string;
             job_type: string;
-            prompt?: string | undefined;
-            raw_content?: string | undefined;
             request: {
                 content_size: number;
                 fetch_mode?: string | undefined;
+                hints_applied?: {
+                    [key: string]: string;
+                } | undefined;
                 model: string;
+                page_content?: string | undefined;
+                prompt?: string | undefined;
                 prompt_size: number;
                 provider: string;
+                schema?: string | undefined;
             };
             response: {
                 duration_ms: number;
                 error?: string | undefined;
                 input_tokens: number;
                 output_tokens: number;
+                raw_output?: string | undefined;
                 success: boolean;
             };
-            schema?: string | undefined;
             timestamp: string;
             url: string;
         }[] | null;
@@ -4244,6 +4277,13 @@ declare class Refyne {
     private readonly config;
     private readonly logger;
     private apiVersionChecked;
+    /**
+     * Domain fetch mode cache for auto mode.
+     * When a domain returns fetch_mode_used='dynamic', the SDK remembers this
+     * and automatically uses dynamic mode for subsequent requests to that domain.
+     * This persists for the lifetime of the SDK instance.
+     */
+    private readonly domainFetchModes;
     /** Sub-client for job operations */
     readonly jobs: JobsClient;
     /** Sub-client for schema operations */
@@ -4260,14 +4300,35 @@ declare class Refyne {
     private createErrorMiddleware;
     /**
      * Extract structured data from a single web page.
+     *
+     * When using auto mode (the default), the SDK will automatically use dynamic
+     * rendering for domains that have previously required it. The SDK learns which
+     * domains need dynamic mode based on the `fetch_mode_used` field in API responses.
+     *
+     * @param request - Extraction request with URL, schema, and optional fetch_mode
+     * @returns Extracted data matching the schema
      */
     extract(request: ExtractRequest): Promise<ExtractResponse>;
     /**
      * Start an asynchronous crawl job.
+     *
+     * When using auto mode (the default), the SDK will automatically use dynamic
+     * rendering for domains that have previously required it. The SDK learns which
+     * domains need dynamic mode based on previous extract/analyze operations.
+     *
+     * @param request - Crawl request with seed URL, schema, options, and optional fetch_mode
+     * @returns Crawl job response with job ID and status
      */
     crawl(request: CrawlRequest): Promise<CrawlJobResponse>;
     /**
      * Analyze a website to detect structure and suggest schemas.
+     *
+     * When using auto mode (the default), the SDK will automatically use dynamic
+     * rendering for domains that have previously required it. The SDK learns which
+     * domains need dynamic mode based on the `fetch_mode_used` field in API responses.
+     *
+     * @param request - Analysis request with URL and optional fetch_mode
+     * @returns Analysis results including detected elements and suggested schema
      */
     analyze(request: AnalyzeRequest): Promise<AnalyzeResponse>;
     /**
@@ -4317,6 +4378,39 @@ declare class Refyne {
             requests_per_minute: number;
         }[] | null;
     }>;
+    /**
+     * Extract the domain from a URL.
+     * @internal
+     */
+    private extractDomain;
+    /**
+     * Resolve the effective fetch mode for a request.
+     * If fetch_mode is 'auto' and we have learned that this domain needs dynamic mode,
+     * return 'dynamic'. Otherwise return the original fetch_mode.
+     * @internal
+     */
+    private resolveFetchMode;
+    /**
+     * Learn the fetch mode from an API response.
+     * If the response indicates dynamic mode was used, remember this for the domain.
+     * @internal
+     */
+    private learnFetchMode;
+    /**
+     * Clear learned fetch modes for all domains.
+     * Useful for testing or when you want to reset auto-mode learning.
+     */
+    clearLearnedFetchModes(): void;
+    /**
+     * Clear learned fetch mode for a specific domain.
+     * @param domain - Domain to clear (e.g., 'example.com')
+     */
+    clearLearnedFetchMode(domain: string): void;
+    /**
+     * Get learned fetch modes (for debugging/inspection).
+     * @returns Map of domains to their learned fetch modes
+     */
+    getLearnedFetchModes(): ReadonlyMap<string, 'static' | 'dynamic'>;
     /**
      * Get the raw openapi-fetch client for advanced usage.
      */
@@ -4606,4 +4700,4 @@ declare function detectRuntime(): {
  */
 declare function buildUserAgent(customSuffix?: string): string;
 
-export { type AnalyzeRequest, type AnalyzeResponse, AuthenticationError, type Cache, type CacheControlDirectives, type CacheEntry, type CrawlJobResponse, type CrawlRequest, DEFAULT_BASE_URL, DEFAULT_MAX_RETRIES, DEFAULT_TIMEOUT, type ExtractRequest, type ExtractResponse, ForbiddenError, type JobResponse, JobsClient, KeysClient, LLMClient, type Logger, MAX_KNOWN_API_VERSION, MIN_API_VERSION, MemoryCache, type MemoryCacheConfig, NetworkError, NotFoundError, RateLimitError, Refyne, RefyneBuilder, type RefyneConfig, RefyneError, SDK_VERSION, type SavedSiteOutput, type SchemaOutput, SchemasClient, SitesClient, TLSError, TimeoutError, UnsupportedAPIVersionError, type UsageResponse, ValidationError, buildUserAgent, calculateBackoffWithJitter, type components, createCacheEntry, Refyne as default, defaultLogger, detectRuntime, hashStringAsync, type operations, parseCacheControl, type paths };
+export { type AnalyzeRequest, type AnalyzeResponse, AuthenticationError, type Cache, type CacheControlDirectives, type CacheEntry, type CrawlJobResponse, type CrawlRequest, DEFAULT_BASE_URL, DEFAULT_MAX_RETRIES, DEFAULT_TIMEOUT, type ExtractRequest, type ExtractResponse, type FetchMode, ForbiddenError, type JobResponse, JobsClient, KeysClient, LLMClient, type Logger, MAX_KNOWN_API_VERSION, MIN_API_VERSION, MemoryCache, type MemoryCacheConfig, NetworkError, NotFoundError, RateLimitError, Refyne, RefyneBuilder, type RefyneConfig, RefyneError, SDK_VERSION, type SavedSiteOutput, type SchemaOutput, SchemasClient, SitesClient, TLSError, TimeoutError, UnsupportedAPIVersionError, type UsageResponse, ValidationError, buildUserAgent, calculateBackoffWithJitter, type components, createCacheEntry, Refyne as default, defaultLogger, detectRuntime, hashStringAsync, type operations, parseCacheControl, type paths };
