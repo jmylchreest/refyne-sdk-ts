@@ -1029,24 +1029,14 @@ export interface components {
             visibility: "private" | "public";
         };
         DebugCaptureEntry: {
-            /** @description Preprocessing hints applied */
-            hints_applied?: {
-                [key: string]: string;
-            };
             /** @description Capture ID */
             id: string;
             /** @description Job type (analyze, extract, crawl) */
             job_type: string;
-            /** @description Full prompt sent to LLM (for analyze jobs) */
-            prompt?: string;
-            /** @description Page content (for extract/crawl jobs) */
-            raw_content?: string;
-            /** @description LLM request metadata */
+            /** @description LLM request with metadata and payload */
             request: components["schemas"]["DebugCaptureLLMRequest"];
-            /** @description LLM response metadata */
+            /** @description LLM response with metadata and payload */
             response: components["schemas"]["DebugCaptureLLMResponse"];
-            /** @description Schema used for extraction */
-            schema?: string;
             /** @description When the request was made */
             timestamp: string;
             /** @description Page URL being processed */
@@ -1060,8 +1050,16 @@ export interface components {
             content_size: number;
             /** @description Content fetch mode */
             fetch_mode?: string;
+            /** @description Preprocessing hints applied */
+            hints_applied?: {
+                [key: string]: string;
+            };
             /** @description LLM model used */
             model: string;
+            /** @description Cleaned page content sent to LLM */
+            page_content?: string;
+            /** @description Full prompt sent to LLM (for analyze jobs) */
+            prompt?: string;
             /**
              * Format: int64
              * @description Total prompt size including system instructions
@@ -1069,6 +1067,8 @@ export interface components {
             prompt_size: number;
             /** @description LLM provider used */
             provider: string;
+            /** @description Schema used for extraction */
+            schema?: string;
         };
         DebugCaptureLLMResponse: {
             /**
@@ -1088,6 +1088,8 @@ export interface components {
              * @description Output tokens generated
              */
             output_tokens: number;
+            /** @description Raw LLM response text */
+            raw_output?: string;
             /** @description Whether the request succeeded */
             success: boolean;
         };
