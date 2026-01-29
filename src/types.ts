@@ -163,6 +163,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/jobs/{id}/debug-capture/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download debug capture file
+         * @description Returns a signed URL to download the raw debug capture JSON file for sharing or offline analysis
+         */
+        get: operations["downloadJobDebugCapture"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/jobs/{id}/download": {
         parameters: {
             query?: never;
@@ -1035,12 +1055,19 @@ export interface components {
             api_version?: string;
             /** @description Capture ID */
             id: string;
+            /** @description Whether user's own API key was used */
+            is_byok?: boolean;
             /** @description Job type (analyze, extract, crawl) */
             job_type: string;
             /** @description LLM request with metadata and payload */
             request: components["schemas"]["DebugCaptureLLMRequest"];
             /** @description LLM response with metadata and payload */
             response: components["schemas"]["DebugCaptureLLMResponse"];
+            /**
+             * Format: int64
+             * @description Order within job (0-indexed)
+             */
+            sequence?: number;
             /** @description When the request was made */
             timestamp: string;
             /** @description Page URL being processed */
@@ -1052,12 +1079,26 @@ export interface components {
              * @description Size of content sent to LLM
              */
             content_size: number;
+            /**
+             * Format: int64
+             * @description Position in fallback chain (0=primary)
+             */
+            fallback_position?: number;
             /** @description Content fetch mode */
             fetch_mode?: string;
             /** @description Preprocessing hints applied */
             hints_applied?: {
                 [key: string]: string;
             };
+            /** @description Whether this was a retry attempt */
+            is_retry?: boolean;
+            /** @description Whether JSON mode was enabled */
+            json_mode?: boolean;
+            /**
+             * Format: int64
+             * @description Max tokens requested
+             */
+            max_tokens?: number;
             /** @description LLM model used */
             model: string;
             /** @description Cleaned page content sent to LLM */
@@ -1073,8 +1114,22 @@ export interface components {
             provider: string;
             /** @description Schema used for extraction */
             schema?: string;
+            /** @description System instructions sent to LLM */
+            system_prompt?: string;
+            /**
+             * Format: double
+             * @description Temperature setting
+             */
+            temperature?: number;
+            /** @description Formatted user content/prompt */
+            user_prompt?: string;
         };
         DebugCaptureLLMResponse: {
+            /**
+             * Format: double
+             * @description Cost of this request in USD
+             */
+            cost_usd?: number;
             /**
              * Format: int64
              * @description Request duration in milliseconds
@@ -1082,6 +1137,8 @@ export interface components {
             duration_ms: number;
             /** @description Error message if failed */
             error?: string;
+            /** @description Error classification */
+            error_category?: string;
             /**
              * Format: int64
              * @description Input tokens consumed
@@ -1092,6 +1149,10 @@ export interface components {
              * @description Output tokens generated
              */
             output_tokens: number;
+            /** @description Error if JSON parsing failed */
+            parse_error?: string;
+            /** @description Structured data (if successfully parsed) */
+            parsed_output?: unknown;
             /** @description Raw LLM response text */
             raw_output?: string;
             /** @description Whether the request succeeded */
@@ -1140,6 +1201,16 @@ export interface components {
             name: string;
             /** @description Data type: string, number, boolean, array, url, date */
             type: string;
+        };
+        DownloadJobDebugCaptureOutputBody: {
+            /** @description Signed URL for downloading the debug capture file */
+            download_url: string;
+            /** @description When the download URL expires */
+            expires_at: string;
+            /** @description Suggested filename for the download */
+            filename: string;
+            /** @description Job ID */
+            job_id: string;
         };
         ErrorCategoryResponse: {
             category: string;
@@ -1353,12 +1424,43 @@ export interface components {
             tiers: string[] | null;
         };
         GetJobDebugCaptureOutputBody: {
+            /** @description API version that processed this job */
+            api_version?: string;
             /** @description Captured LLM requests */
             captures: components["schemas"]["DebugCaptureEntry"][] | null;
             /** @description Whether debug capture was enabled for this job */
             enabled: boolean;
+            /** @description Whether user's own API key was used */
+            is_byok?: boolean;
             /** @description Job ID */
             job_id: string;
+            /** @description Job type (analyze, extract, crawl) */
+            job_type?: string;
+            /**
+             * Format: double
+             * @description Total cost in USD
+             */
+            total_cost_usd?: number;
+            /**
+             * Format: int64
+             * @description Total duration in milliseconds
+             */
+            total_duration_ms?: number;
+            /**
+             * Format: int64
+             * @description Number of LLM requests
+             */
+            total_requests?: number;
+            /**
+             * Format: int64
+             * @description Total input tokens
+             */
+            total_tokens_in?: number;
+            /**
+             * Format: int64
+             * @description Total output tokens
+             */
+            total_tokens_out?: number;
         };
         GetJobResultsDownloadOutputBody: {
             /** @description Presigned URL to download results (valid for 1 hour) */
@@ -2488,6 +2590,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GetJobDebugCaptureOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    downloadJobDebugCapture: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Job ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DownloadJobDebugCaptureOutputBody"];
                 };
             };
             /** @description Error */
