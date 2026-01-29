@@ -1031,6 +1031,8 @@ export interface components {
             visibility: "private" | "public";
         };
         DebugCaptureEntry: {
+            /** @description API version that processed this request */
+            api_version?: string;
             /** @description Capture ID */
             id: string;
             /** @description Job type (analyze, extract, crawl) */
