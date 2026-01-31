@@ -64,14 +64,22 @@ async function main() {
 
     // Poll for completion
     let status = await refyne.jobs.get(job.jobId);
-    console.log(`Initial status: ${status.status}`);
+    const formatStatus = (s: typeof status) => {
+      if (s.status === 'pending' && s.queue_position > 0) {
+        return `${s.status} (queue position: ${s.queue_position})`;
+      } else if (s.status === 'running') {
+        return `${s.status} (${s.pageCount} pages processed)`;
+      }
+      return s.status;
+    };
+    console.log(`Initial status: ${formatStatus(status)}`);
 
     while (status.status === 'pending' || status.status === 'running') {
       // Wait 2 seconds between polls
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
       status = await refyne.jobs.get(job.jobId);
-      console.log(`Status: ${status.status} (${status.pageCount} pages processed)`);
+      console.log(`Status: ${formatStatus(status)}`);
     }
 
     console.log('');

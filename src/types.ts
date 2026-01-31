@@ -789,6 +789,12 @@ export interface components {
              */
             page_count?: number;
             /**
+             * Format: int64
+             * @description Position in queue (1-indexed, only for pending jobs)
+             * @example 3
+             */
+            queue_position?: number;
+            /**
              * @description Job status: pending, running, completed, failed
              * @example completed
              */
@@ -1581,6 +1587,11 @@ export interface components {
             id: string;
             /** Format: int64 */
             page_count: number;
+            /**
+             * Format: int64
+             * @description Position in queue (1-indexed, 0 if not pending)
+             */
+            queue_position: number;
             started_at?: string;
             status: string;
             /** Format: int64 */
