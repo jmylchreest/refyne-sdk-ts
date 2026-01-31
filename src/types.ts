@@ -1636,7 +1636,7 @@ export interface components {
         LLMConfigInput: {
             /** @description API key for the provider */
             api_key?: string;
-            /** @description Custom base URL (for Ollama) */
+            /** @description Custom base URL (for Ollama or self-hosted Helicone) */
             base_url?: string;
             /** @description Model to use */
             model?: string;
@@ -1644,7 +1644,11 @@ export interface components {
              * @description LLM provider
              * @enum {string}
              */
-            provider?: "anthropic" | "openai" | "openrouter" | "ollama" | "credits";
+            provider?: "anthropic" | "openai" | "openrouter" | "ollama" | "helicone" | "credits";
+            /** @description Underlying provider's API key for Helicone self-hosted mode */
+            target_api_key?: string;
+            /** @description Underlying provider for Helicone self-hosted mode */
+            target_provider?: string;
         };
         ListAllSchemasOutputBody: {
             /** @description List of all schemas */
@@ -1790,7 +1794,9 @@ export interface components {
             provider: string;
         };
         ProviderInfo: {
+            allow_base_url_override: boolean;
             base_url_hint?: string;
+            decommission_note?: string;
             description: string;
             display_name: string;
             docs_url?: string;
@@ -1798,6 +1804,8 @@ export interface components {
             name: string;
             required_features?: string[] | null;
             requires_key: boolean;
+            status: string;
+            successor_provider?: string;
         };
         ProviderModelResponse: {
             /** Format: int64 */
@@ -3112,7 +3120,10 @@ export interface operations {
     };
     listProviders: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Include decommissioned providers in the response */
+                include_decommissioned?: boolean;
+            };
             header?: never;
             path?: never;
             cookie?: never;
