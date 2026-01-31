@@ -1332,11 +1332,8 @@ export interface components {
             max_tokens?: number;
             /** @description Model identifier */
             model: string;
-            /**
-             * @description LLM provider name
-             * @enum {string}
-             */
-            provider: "openrouter" | "anthropic" | "openai" | "ollama";
+            /** @description LLM provider name (see /llm/providers for available options) */
+            provider: string;
             /**
              * Format: double
              * @description Temperature setting (0.0-1.0, nil for default)
@@ -1954,11 +1951,8 @@ export interface components {
             api_key?: string;
             /** @description Whether this provider is enabled */
             is_enabled: boolean;
-            /**
-             * @description LLM provider name
-             * @enum {string}
-             */
-            provider: "openrouter" | "anthropic" | "openai";
+            /** @description LLM provider name (see /llm/providers for available options) */
+            provider: string;
         };
         ServiceKeyResponse: {
             created_at: string;
@@ -2139,11 +2133,8 @@ export interface components {
             max_tokens?: number;
             /** @description Model identifier */
             model: string;
-            /**
-             * @description LLM provider name
-             * @enum {string}
-             */
-            provider: "openrouter" | "anthropic" | "openai" | "ollama";
+            /** @description LLM provider name (see /llm/providers for available options) */
+            provider: string;
             /**
              * Format: double
              * @description Temperature setting (0.0-1.0, nil for default)
@@ -2182,11 +2173,8 @@ export interface components {
             base_url?: string;
             /** @description Whether this provider is enabled */
             is_enabled: boolean;
-            /**
-             * @description LLM provider name
-             * @enum {string}
-             */
-            provider: "openrouter" | "anthropic" | "openai" | "ollama";
+            /** @description LLM provider name (see /llm/providers for available options) */
+            provider: string;
         };
         UserServiceKeyResponse: {
             base_url?: string;
