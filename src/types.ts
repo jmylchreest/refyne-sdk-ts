@@ -1587,10 +1587,7 @@ export interface components {
             id: string;
             /** Format: int64 */
             page_count: number;
-            /**
-             * Format: int64
-             * @description Position in queue (1-indexed, 0 if not pending)
-             */
+            /** Format: int64 */
             queue_position: number;
             started_at?: string;
             status: string;
