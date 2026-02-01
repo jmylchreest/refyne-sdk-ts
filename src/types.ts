@@ -745,19 +745,6 @@ export interface components {
             /** @description Available options for this cleaner */
             options?: components["schemas"]["CleanerOptionResponse"][] | null;
         };
-        CrawlInlineWebhookInput: {
-            /** @description Event types to subscribe to (empty for all) */
-            events?: string[] | null;
-            /** @description Custom headers */
-            headers?: components["schemas"]["CrawlWebhookHeaderInput"][] | null;
-            /** @description Secret for HMAC-SHA256 signature */
-            secret?: string;
-            /**
-             * Format: uri
-             * @description Webhook URL
-             */
-            url: string;
-        };
         CrawlJobResponseBody: {
             /**
              * Format: double
@@ -957,17 +944,11 @@ export interface components {
              */
             max_pages?: number;
         };
-        CrawlWebhookHeaderInput: {
-            /** @description Header name */
-            name: string;
-            /** @description Header value */
-            value: string;
-        };
         CreateCrawlJobInputBody: {
             /** @description Enable debug capture to store raw LLM request/response for troubleshooting */
             capture_debug?: boolean;
             /** @description Content cleaner chain (default: [markdown]) */
-            cleaner_chain?: components["schemas"]["JobCleanerConfigInput"][] | null;
+            cleaner_chain?: components["schemas"]["CleanerConfigInput"][] | null;
             /** @description Optional LLM configuration override (BYOK) */
             llm_config?: components["schemas"]["LLMConfigInput"];
             /** @description Crawl configuration options */
@@ -980,7 +961,7 @@ export interface components {
              */
             url: string;
             /** @description Inline ephemeral webhook configuration */
-            webhook?: components["schemas"]["CrawlInlineWebhookInput"];
+            webhook?: components["schemas"]["InlineWebhookInput"];
             /** @description ID of a saved webhook to call on job events */
             webhook_id?: string;
             /**
@@ -1518,39 +1499,6 @@ export interface components {
              * @description Webhook URL
              */
             url: string;
-        };
-        JobCleanerConfigInput: {
-            /** @description Cleaner name (noop, refyne) */
-            name: string;
-            /** @description Cleaner-specific options */
-            options?: components["schemas"]["JobCleanerOptionsInput"];
-        };
-        JobCleanerOptionsInput: {
-            /** @description Base URL for resolving relative links */
-            base_url?: string;
-            /** @description Extract heading structure to frontmatter (markdown) */
-            extract_headings?: boolean;
-            /** @description Extract images to frontmatter with {{IMG_001}} placeholders (markdown) */
-            extract_images?: boolean;
-            /** @description Prepend YAML frontmatter with metadata (markdown output) */
-            include_frontmatter?: boolean;
-            /** @description CSS selectors for elements to always keep */
-            keep_selectors?: string[] | null;
-            /**
-             * @description Output format: html, text, or markdown
-             * @default html
-             * @enum {string}
-             */
-            output: "html" | "text" | "markdown";
-            /**
-             * @description Preset: default, minimal, or aggressive
-             * @enum {string}
-             */
-            preset?: "default" | "minimal" | "aggressive";
-            /** @description CSS selectors for elements to remove */
-            remove_selectors?: string[] | null;
-            /** @description Resolve relative URLs to absolute using base_url */
-            resolve_urls?: boolean;
         };
         JobQueueStats: {
             /** @description Pending jobs by tier */
