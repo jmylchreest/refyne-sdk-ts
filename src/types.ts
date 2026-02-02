@@ -846,9 +846,9 @@ export interface components {
         CrawlOptions: {
             /**
              * Format: int64
-             * @description Concurrent extraction requests
-             * @default 3
-             * @example 5
+             * @description Concurrent extraction requests per job
+             * @default 10
+             * @example 10
              */
             concurrency: number;
             /**
